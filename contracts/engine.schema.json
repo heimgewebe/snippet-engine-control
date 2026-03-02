@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EngineCapabilities",
+  "type": "object",
+  "properties": {
+    "supportsWordBoundary": { "type": "boolean" },
+    "supportsMultiline": { "type": "boolean" },
+    "supportsVarsShell": { "type": "boolean" },
+    "supportsAppSpecific": { "type": "boolean" },
+    "supportsHotkeys": { "type": "boolean" }
+  },
+  "required": [
+    "supportsWordBoundary",
+    "supportsMultiline",
+    "supportsVarsShell",
+    "supportsAppSpecific",
+    "supportsHotkeys"
+  ]
+}

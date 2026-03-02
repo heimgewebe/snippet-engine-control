@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Diagnostics",
+  "type": "object",
+  "properties": {
+    "triggerCollisions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "ambiguousBoundaries": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "encodingIssues": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unsupportedFeatures": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

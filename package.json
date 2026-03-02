@@ -1,0 +1,17 @@
+{
+  "name": "snippet-engine-control",
+  "version": "0.1.0",
+  "description": "Engine-neutral control plane for text-expansion systems with contract-first modeling, diagnostics, and diffable export planning.",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
