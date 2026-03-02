@@ -1,0 +1,17 @@
+[
+  {
+    "id": "snippet1",
+    "triggers": [";foo", ";bar"],
+    "body": "Hello World"
+  },
+  {
+    "id": "snippet2",
+    "triggers": [";foo"],
+    "body": "Colliding snippet"
+  },
+  {
+    "id": "snippet3",
+    "triggers": [";baz"],
+    "body": "No collision"
+  }
+]
