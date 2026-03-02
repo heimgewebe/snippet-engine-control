@@ -9,8 +9,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "composite": true,
-    "outDir": "dist"
+    "composite": true
   },
-  "exclude": ["node_modules", "dist"]
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/adapter-espanso" },
+    { "path": "./packages/cli" }
+  ]
 }

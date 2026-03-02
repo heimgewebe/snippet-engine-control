@@ -7,9 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "tsc -b -v",
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "tsc -b -v"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
