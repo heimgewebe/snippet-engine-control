@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://snippet-engine-control.local/snippet.schema.json",
+  "title": "Snippet",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string" },
+    "triggers": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "body": { "type": "string" },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "wordBoundary": { "type": "boolean" },
+        "appInclude": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "appExclude": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "localeHints": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "origin": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string" },
+        "path": { "type": "string" }
+      },
+      "required": ["source", "path"]
+    }
+  },
+  "required": ["id", "triggers", "body"]
+}

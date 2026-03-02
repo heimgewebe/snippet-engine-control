@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://snippet-engine-control.local/engine.schema.json",
+  "title": "EngineCapabilities",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "supportsWordBoundary": { "type": "boolean" },
+    "supportsMultiline": { "type": "boolean" },
+    "supportsVarsShell": { "type": "boolean" },
+    "supportsAppSpecific": { "type": "boolean" },
+    "supportsHotkeys": { "type": "boolean" }
+  },
+  "required": [
+    "supportsWordBoundary",
+    "supportsMultiline",
+    "supportsVarsShell",
+    "supportsAppSpecific",
+    "supportsHotkeys"
+  ]
+}
