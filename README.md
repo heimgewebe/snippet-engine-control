@@ -56,6 +56,14 @@ Core IR  →  Analyzer  →  ExportPlan  →  Engine Adapter
 * Espanso-Adapter
 * CLI (validate / export / apply / doctor)
 
+**Testing Collisions Locally**
+
+The default CLI validation runs against a collision-free fixture. To test and demonstrate trigger collisions, you can override the target file with the environment variable:
+
+```bash
+SEC_SNIPPETS=fixtures/snippets.conflict.json sec validate
+```
+
 ---
 
 ## Perspektivische Erweiterung
