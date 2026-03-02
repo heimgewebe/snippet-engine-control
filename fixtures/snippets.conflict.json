@@ -6,8 +6,8 @@
   },
   {
     "id": "snippet2",
-    "triggers": [";foo2"],
-    "body": "No collision snippet"
+    "triggers": [";foo"],
+    "body": "Colliding snippet"
   },
   {
     "id": "snippet3",

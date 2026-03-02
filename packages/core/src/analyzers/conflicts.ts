@@ -12,7 +12,7 @@ export function analyzeConflicts(snippets: Snippet[]): Diagnostics {
   const triggerMap = new Map<string, string[]>();
 
   for (const snippet of snippets) {
-    for (const trigger of snippet.triggers) {
+    for (const trigger of new Set(snippet.triggers)) {
       if (!triggerMap.has(trigger)) {
         triggerMap.set(trigger, []);
       }
