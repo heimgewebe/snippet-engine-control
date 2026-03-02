@@ -11,10 +11,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@snippet-engine-control/core": "*",
-    "@snippet-engine-control/adapter-espanso": "*"
+    "@snippet-engine-control/adapter-espanso": "*",
+    "@snippet-engine-control/core": "*"
   },
   "devDependencies": {
+    "@types/node": "^25.3.3",
     "typescript": "^5.0.0"
   }
 }

@@ -1,7 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://snippet-engine-control.local/snippet.schema.json",
   "title": "Snippet",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "id": { "type": "string" },
     "triggers": {
@@ -11,6 +13,7 @@
     "body": { "type": "string" },
     "constraints": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "wordBoundary": { "type": "boolean" },
         "appInclude": {
@@ -33,10 +36,12 @@
     },
     "origin": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "source": { "type": "string" },
         "path": { "type": "string" }
-      }
+      },
+      "required": ["source", "path"]
     }
   },
   "required": ["id", "triggers", "body"]
