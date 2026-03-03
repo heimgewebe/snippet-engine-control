@@ -15,7 +15,7 @@
     "@snippet-engine-control/core": "*"
   },
   "devDependencies": {
-    "@types/node": "^25.3.3",
+    "@types/node": "^20.0.0",
     "typescript": "^5.0.0"
   }
 }
