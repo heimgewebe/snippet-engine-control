@@ -9,12 +9,21 @@ import { lint } from './lint';
 const args = process.argv.slice(2);
 const command = args[0];
 
+// Parse simple --input <path>
+let inputPath: string | undefined = process.env.SEC_SNIPPETS;
+for (let i = 1; i < args.length; i++) {
+  if (args[i] === '--input' && i + 1 < args.length) {
+    inputPath = args[i + 1];
+    break;
+  }
+}
+
 switch (command) {
   case 'validate':
-    validate();
+    validate(inputPath);
     break;
   case 'export':
-    exportPlan();
+    exportPlan(inputPath);
     break;
   case 'apply':
     apply();
@@ -23,7 +32,7 @@ switch (command) {
     doctor();
     break;
   case 'lint':
-    lint();
+    lint(inputPath);
     break;
   case undefined:
   case 'help':

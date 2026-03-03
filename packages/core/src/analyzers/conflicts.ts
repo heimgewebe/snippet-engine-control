@@ -22,7 +22,8 @@ export function analyzeConflicts(snippets: Snippet[]): Diagnostics {
 
   for (const [trigger, ids] of triggerMap.entries()) {
     if (ids.length > 1) {
-      diagnostics.triggerCollisions.push(`trigger '${trigger}' used by ids: ${ids.join(',')}`);
+      const sortedIds = [...ids].sort();
+      diagnostics.triggerCollisions.push(`trigger '${trigger}' used by ids: ${sortedIds.join(', ')}`);
     }
   }
 
