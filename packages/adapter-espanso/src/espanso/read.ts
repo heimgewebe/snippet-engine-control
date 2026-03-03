@@ -70,16 +70,12 @@ export function readSnippetsFromEspanso(targetDir?: string): Snippet[] {
           continue; // Need at least one trigger
         }
 
-        let body = '';
-        if (typeof match.replace === 'string') {
-          body = match.replace;
+        if (typeof match.replace !== 'string') {
+          continue; // Need a string body (empty string is fine)
         }
+        const body = match.replace;
 
-        if (!body) {
-          continue; // Need a body
-        }
-
-        const constraints: Snippet['constraints'] = {};
+        const constraints: NonNullable<Snippet['constraints']> = {};
         if (match.word === true) {
           constraints.wordBoundary = true;
         }

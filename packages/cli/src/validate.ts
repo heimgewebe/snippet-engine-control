@@ -47,14 +47,17 @@ export function validate(options: ValidateOptions | string = {}) {
       if (s?.origin?.path) matchedPaths.add(s.origin.path);
     }
 
-    normalizedSnippets.forEach(s => {
-      if (issue.includes(`Snippet ${s.id}`) && s.origin?.path) {
-        matchedPaths.add(s.origin.path);
-      }
-    });
+    // Check for "Snippet 'id'" format from boundary/encoding analyzers
+    const snippetMatchRegex = /Snippet\s+'([^']+)'/g;
+    let match;
+    while ((match = snippetMatchRegex.exec(issue)) !== null) {
+      const id = match[1];
+      const s = normalizedSnippets.find(s => s.id === id);
+      if (s?.origin?.path) matchedPaths.add(s.origin.path);
+    }
 
     // Check for "used by ids: a, b" format from conflict analyzer
-    const idsMatch = issue.match(/used by ids:\s*(.+)$/);
+    const idsMatch = issue.match(/used by ids:\s*([^\n]+)/);
     if (idsMatch && idsMatch[1]) {
       const ids = idsMatch[1].split(',').map(id => id.trim());
       ids.forEach(id => {

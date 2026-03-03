@@ -5,8 +5,10 @@ import * as path from 'path';
 import * as os from 'os';
 import { readSnippetsFromEspanso } from '../src/espanso/read';
 
-test('Espanso Read - golden path YAML files', () => {
+test('Espanso Read - golden path YAML files', (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-espanso-test-'));
+  t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
   const matchDir = path.join(tmpDir, 'match');
   fs.mkdirSync(matchDir, { recursive: true });
 
@@ -43,13 +45,12 @@ matches:
   assert.equal(snippets.length, snippetsSecondRun.length);
   assert.equal(snippets[0].id, snippetsSecondRun[0].id, 'IDs should be deterministic across reads');
   assert.equal(snippets[1].id, snippetsSecondRun[1].id, 'IDs should be deterministic across reads');
-
-  // Cleanup
-  fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-test('Espanso Read - mixed app_exclude types are filtered', () => {
+test('Espanso Read - mixed app_exclude types are filtered', (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-espanso-test-mixed-'));
+  t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
   const matchDir = path.join(tmpDir, 'match');
   fs.mkdirSync(matchDir, { recursive: true });
 
@@ -65,13 +66,12 @@ matches:
   const snippets = readSnippetsFromEspanso(tmpDir);
   assert.equal(snippets.length, 1);
   assert.deepEqual(snippets[0].constraints?.appExclude, ['terminal', 'browser']);
-
-  // Cleanup
-  fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-test('Espanso Read - invalid YAML throws', () => {
+test('Espanso Read - invalid YAML throws', (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-espanso-test-err-'));
+  t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
   const matchDir = path.join(tmpDir, 'match');
   fs.mkdirSync(matchDir, { recursive: true });
 
@@ -86,13 +86,32 @@ matches:
   assert.throws(() => {
     readSnippetsFromEspanso(tmpDir);
   }, /Failed to parse YAML/);
-
-  // Cleanup
-  fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-test('Espanso Read - skip invalid objects silently', () => {
+test('Espanso Read - empty replace string is kept', (t) => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-espanso-test-empty-'));
+  t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
+  const matchDir = path.join(tmpDir, 'match');
+  fs.mkdirSync(matchDir, { recursive: true });
+
+  const yamlContent = `
+matches:
+  - trigger: ":empty"
+    replace: ""
+  `;
+  const filePath = path.join(matchDir, 'empty.yml');
+  fs.writeFileSync(filePath, yamlContent);
+
+  const snippets = readSnippetsFromEspanso(tmpDir);
+  assert.equal(snippets.length, 1);
+  assert.equal(snippets[0].body, '');
+});
+
+test('Espanso Read - skip invalid objects silently', (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-espanso-test-skip-'));
+  t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
   const matchDir = path.join(tmpDir, 'match');
   fs.mkdirSync(matchDir, { recursive: true });
 
@@ -110,7 +129,4 @@ matches:
 
   assert.equal(snippets.length, 1);
   assert.equal(snippets[0].triggers[0], ':good');
-
-  // Cleanup
-  fs.rmSync(tmpDir, { recursive: true, force: true });
 });
