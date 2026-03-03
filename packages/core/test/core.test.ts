@@ -63,6 +63,35 @@ test('Core IR - fingerprint is deterministic', () => {
   assert.equal(hash1, hash2);
 });
 
+test('Core IR - fingerprint stable stringify handles missing vs undefined vs empty constraints', () => {
+  const snippet1: Snippet = {
+    id: 'test1',
+    triggers: ['a'],
+    body: 'hello',
+  };
+
+  const snippet2: Snippet = {
+    id: 'test2',
+    triggers: ['a'],
+    body: 'hello',
+    constraints: undefined,
+  };
+
+  const snippet3: Snippet = {
+    id: 'test3',
+    triggers: ['a'],
+    body: 'hello',
+    constraints: {},
+  };
+
+  const hash1 = fingerprint(snippet1);
+  const hash2 = fingerprint(snippet2);
+  const hash3 = fingerprint(snippet3);
+
+  assert.equal(hash1, hash2);
+  assert.equal(hash1, hash3);
+});
+
 test('Core IR - fingerprint stable stringify handles object key order', () => {
   const snippet1: Snippet = {
     id: 'test',

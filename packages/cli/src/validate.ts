@@ -20,9 +20,9 @@ export function validate(inputPath?: string) {
   const boundariesDiag = analyzeBoundaries(normalizedSnippets);
 
   // Accumulate diagnostics
-  const allCollisions = conflictsDiag.triggerCollisions.concat(boundariesDiag.triggerCollisions, encodingDiag.triggerCollisions);
-  const allAmbiguous = conflictsDiag.ambiguousBoundaries.concat(boundariesDiag.ambiguousBoundaries, encodingDiag.ambiguousBoundaries);
-  const allEncoding = conflictsDiag.encodingIssues.concat(boundariesDiag.encodingIssues, encodingDiag.encodingIssues);
+  const allCollisions = conflictsDiag.triggerCollisions;
+  const allAmbiguous = boundariesDiag.ambiguousBoundaries;
+  const allEncoding = encodingDiag.encodingIssues;
 
   let hasErrors = false;
 

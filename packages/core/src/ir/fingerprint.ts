@@ -23,12 +23,17 @@ export function fingerprint(snippet: Snippet): string {
   const normalized = normalize(snippet);
 
   // Create a canonical representation without origin/path/time
-  const canonical = {
-    triggers: normalized.triggers,
-    body: normalized.body,
-    constraints: normalized.constraints,
-    tags: normalized.tags,
-  };
+  const canonical: any = {};
+  if (normalized.triggers && normalized.triggers.length > 0) canonical.triggers = normalized.triggers;
+  if (normalized.body !== undefined) canonical.body = normalized.body;
+
+  if (normalized.constraints && Object.keys(normalized.constraints).length > 0) {
+    canonical.constraints = normalized.constraints;
+  }
+
+  if (normalized.tags && normalized.tags.length > 0) {
+    canonical.tags = normalized.tags;
+  }
 
   const jsonString = stableStringify(canonical) ?? '{}';
   return crypto.createHash('sha256').update(jsonString).digest('hex');
