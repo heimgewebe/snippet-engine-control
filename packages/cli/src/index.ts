@@ -9,18 +9,29 @@ import { lint } from './lint';
 const args = process.argv.slice(2);
 const command = args[0];
 
-// Parse simple --input <path>
+// Parse simple options
 let inputPath: string | undefined = process.env.SEC_SNIPPETS;
+let engine: string | undefined;
+let dir: string | undefined;
+
 for (let i = 1; i < args.length; i++) {
   if (args[i] === '--input' && i + 1 < args.length) {
     inputPath = args[i + 1];
-    break;
+    i++;
+  } else if (args[i] === '--engine' && i + 1 < args.length) {
+    engine = args[i + 1];
+    i++;
+  } else if (args[i] === '--espanso') {
+    engine = 'espanso';
+  } else if (args[i] === '--dir' && i + 1 < args.length) {
+    dir = args[i + 1];
+    i++;
   }
 }
 
 switch (command) {
   case 'validate':
-    validate(inputPath);
+    validate({ inputPath, engine, dir });
     break;
   case 'export':
     exportPlan(inputPath);
