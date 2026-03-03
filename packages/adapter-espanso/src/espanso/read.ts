@@ -1,8 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import * as crypto from 'crypto';
 import * as yaml from 'yaml';
-import { Snippet } from '@snippet-engine-control/core';
+import { Snippet, fingerprint } from '@snippet-engine-control/core';
 import { discoverDirs } from './discover';
 
 export function readSnippets(inputPath?: string): Snippet[] {
@@ -85,18 +84,13 @@ export function readSnippetsFromEspanso(targetDir?: string): Snippet[] {
           constraints.wordBoundary = true;
         }
         if (Array.isArray(match.app_include)) {
-          constraints.appInclude = match.app_include;
+          constraints.appInclude = match.app_include.filter((x: any) => typeof x === 'string');
         }
         if (Array.isArray(match.app_exclude)) {
-          constraints.appExclude = match.app_exclude;
+          constraints.appExclude = match.app_exclude.filter((x: any) => typeof x === 'string');
         }
 
-        // Use a hash for ID if not provided, since Espanso doesn't mandate IDs in matches
-        const idStr = `${filePath}:${JSON.stringify(match)}`;
-        const id = crypto.createHash('sha256').update(idStr).digest('hex').substring(0, 12);
-
-        const snippet: Snippet = {
-          id,
+        const snippetDraft: Omit<Snippet, 'id'> = {
           triggers,
           body,
           origin: {
@@ -106,8 +100,15 @@ export function readSnippetsFromEspanso(targetDir?: string): Snippet[] {
         };
 
         if (Object.keys(constraints).length > 0) {
-          snippet.constraints = constraints;
+          snippetDraft.constraints = constraints;
         }
+
+        const id = fingerprint(snippetDraft as Snippet).substring(0, 12);
+
+        const snippet: Snippet = {
+          ...snippetDraft,
+          id
+        };
 
         allSnippets.push(snippet);
       }

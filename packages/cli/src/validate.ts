@@ -53,8 +53,18 @@ export function validate(options: ValidateOptions | string = {}) {
       }
     });
 
+    // Check for "used by ids: a, b" format from conflict analyzer
+    const idsMatch = issue.match(/used by ids:\s*(.+)$/);
+    if (idsMatch && idsMatch[1]) {
+      const ids = idsMatch[1].split(',').map(id => id.trim());
+      ids.forEach(id => {
+        const s = normalizedSnippets.find(s => s.id === id);
+        if (s?.origin?.path) matchedPaths.add(s.origin.path);
+      });
+    }
+
     if (matchedPaths.size > 0) {
-      return `${issue} (${Array.from(matchedPaths).join(', ')})`;
+      return `${issue} (paths: ${Array.from(matchedPaths).join(', ')})`;
     }
     return issue;
   };

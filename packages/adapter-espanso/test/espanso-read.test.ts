@@ -39,6 +39,33 @@ matches:
   assert.equal(second.constraints?.wordBoundary, true);
   assert.deepEqual(second.constraints?.appExclude, ['terminal']);
 
+  const snippetsSecondRun = readSnippetsFromEspanso(tmpDir);
+  assert.equal(snippets.length, snippetsSecondRun.length);
+  assert.equal(snippets[0].id, snippetsSecondRun[0].id, 'IDs should be deterministic across reads');
+  assert.equal(snippets[1].id, snippetsSecondRun[1].id, 'IDs should be deterministic across reads');
+
+  // Cleanup
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('Espanso Read - mixed app_exclude types are filtered', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-espanso-test-mixed-'));
+  const matchDir = path.join(tmpDir, 'match');
+  fs.mkdirSync(matchDir, { recursive: true });
+
+  const yamlContent = `
+matches:
+  - trigger: ":mixed"
+    replace: "Mixed types"
+    app_exclude: ["terminal", 123, null, "browser"]
+  `;
+  const filePath = path.join(matchDir, 'mixed.yml');
+  fs.writeFileSync(filePath, yamlContent);
+
+  const snippets = readSnippetsFromEspanso(tmpDir);
+  assert.equal(snippets.length, 1);
+  assert.deepEqual(snippets[0].constraints?.appExclude, ['terminal', 'browser']);
+
   // Cleanup
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
