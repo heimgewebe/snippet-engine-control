@@ -62,3 +62,30 @@ test('Core IR - fingerprint is deterministic', () => {
 
   assert.equal(hash1, hash2);
 });
+
+test('Core IR - fingerprint stable stringify handles object key order', () => {
+  const snippet1: Snippet = {
+    id: 'test',
+    triggers: ['a'],
+    body: 'hello',
+    constraints: {
+      wordBoundary: true,
+      appExclude: ['a'],
+    }
+  };
+
+  const snippet2: Snippet = {
+    id: 'test',
+    triggers: ['a'],
+    body: 'hello',
+    constraints: {
+      appExclude: ['a'],
+      wordBoundary: true,
+    }
+  };
+
+  const hash1 = fingerprint(snippet1);
+  const hash2 = fingerprint(snippet2);
+
+  assert.equal(hash1, hash2);
+});

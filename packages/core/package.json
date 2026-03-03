@@ -5,6 +5,7 @@
   "types": "dist/src/index.d.ts",
   "scripts": {
     "build": "tsc -b",
+    "pretest": "npm run build",
     "test": "node --test dist/test/*.test.js",
     "typecheck": "tsc --noEmit"
   },

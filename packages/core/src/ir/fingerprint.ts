@@ -3,6 +3,22 @@ import * as crypto from 'crypto';
 import { Snippet } from '../model/snippet';
 import { normalize } from './normalize';
 
+function stableStringify(value: any): string | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return 'null';
+  if (typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) {
+    const arrStr = value.map(v => stableStringify(v) ?? 'null').join(',');
+    return `[${arrStr}]`;
+  }
+  const keys = Object.keys(value).sort();
+  const objStr = keys.map(k => {
+    const vStr = stableStringify(value[k]);
+    return vStr !== undefined ? `${JSON.stringify(k)}:${vStr}` : undefined;
+  }).filter(s => s !== undefined).join(',');
+  return `{${objStr}}`;
+}
+
 export function fingerprint(snippet: Snippet): string {
   const normalized = normalize(snippet);
 
@@ -14,6 +30,6 @@ export function fingerprint(snippet: Snippet): string {
     tags: normalized.tags,
   };
 
-  const jsonString = JSON.stringify(canonical);
+  const jsonString = stableStringify(canonical) ?? '{}';
   return crypto.createHash('sha256').update(jsonString).digest('hex');
 }

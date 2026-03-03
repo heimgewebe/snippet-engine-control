@@ -12,11 +12,12 @@ export function validate(inputPath?: string) {
     process.exit(2);
   }
 
+  const encodingDiag = analyzeEncoding(snippets); // Encoding on raw to catch CRLF
+
   const normalizedSnippets = snippets.map(normalize);
 
   const conflictsDiag = analyzeConflicts(normalizedSnippets);
   const boundariesDiag = analyzeBoundaries(normalizedSnippets);
-  const encodingDiag = analyzeEncoding(normalizedSnippets);
 
   // Accumulate diagnostics
   const allCollisions = conflictsDiag.triggerCollisions.concat(boundariesDiag.triggerCollisions, encodingDiag.triggerCollisions);
