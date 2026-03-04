@@ -130,3 +130,34 @@ matches:
   const unmanagedContent = fs.readFileSync(path.join(matchDir, 'unmanaged.yml'), 'utf8');
   assert.equal(unmanagedContent, unmanagedYaml); // verify unmanaged was untouched
 });
+
+
+test('sec apply without --yes is a dry-run and writes nothing', (t) => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-export-test-'));
+
+  t.after(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  const matchDir = path.join(tempDir, 'match');
+  fs.mkdirSync(matchDir);
+
+  const sourceJson = `
+[
+  {
+    "id": "snippet4",
+    "triggers": [";dry"],
+    "body": "dry run",
+    "origin": { "source": "universal", "path": "test.json" }
+  }
+]
+`;
+  const inputPath = path.join(tempDir, 'source.json');
+  fs.writeFileSync(inputPath, sourceJson, 'utf8');
+
+  const cliPath = path.resolve(__dirname, '../src/index.js');
+
+  execSync(`node ${cliPath} apply --engine espanso --dir ${tempDir} --input ${inputPath}`);
+
+  assert.equal(fs.existsSync(path.join(matchDir, 'sec.generated.yml')), false);
+});

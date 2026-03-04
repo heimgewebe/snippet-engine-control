@@ -12,7 +12,9 @@ export function apply(options: { inputPath?: string; engine?: string; dir?: stri
     process.exit(1);
   }
 
-  if (options.isDryRun) {
+  const isDryRun = options.isDryRun !== false;
+
+  if (isDryRun) {
     console.log('Dry run: skipping write');
     console.log(JSON.stringify(plan, null, 2));
     process.exit(0);

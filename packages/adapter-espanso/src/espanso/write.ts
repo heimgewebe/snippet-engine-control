@@ -14,11 +14,20 @@ export function writeSnippets(plan: ExportPlan): void {
       }
       const tmpPath = change.file + '.tmp';
       fs.writeFileSync(tmpPath, change.content, 'utf8');
-      fs.renameSync(tmpPath, change.file);
-    } else if (change.action === 'delete') {
-      if (fs.existsSync(change.file)) {
-        fs.unlinkSync(change.file);
+
+      try {
+        if (fs.existsSync(change.file)) {
+          fs.rmSync(change.file, { force: true });
+        }
+        fs.renameSync(tmpPath, change.file);
+      } catch (err) {
+        if (fs.existsSync(tmpPath)) {
+          fs.rmSync(tmpPath, { force: true });
+        }
+        throw err;
       }
+    } else if (change.action === 'delete') {
+      fs.rmSync(change.file, { force: true });
     }
   }
 }
