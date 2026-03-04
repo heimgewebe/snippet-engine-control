@@ -189,6 +189,8 @@ test('sec apply --yes creates match/ directory if it is missing', (t) => {
 
   execSync(`node ${cliPath} apply --engine espanso --dir ${tempDir} --input ${inputPath} --yes`);
 
+  assert.equal(fs.existsSync(matchDir), true);
+
   const managedContent = fs.readFileSync(path.join(matchDir, 'sec.generated.yml'), 'utf8');
   assert.equal(managedContent.includes(';mkdir'), true);
 });

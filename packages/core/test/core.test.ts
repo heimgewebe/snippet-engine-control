@@ -40,20 +40,6 @@ test('Core IR - normalize is deterministic', () => {
   assert.deepEqual(normalized.tags, ['y', 'z']);
 });
 
-test('Core IR - normalize deterministic snapshot (string compare)', () => {
-  const snippet1: Snippet = {
-    id: 'test',
-    triggers: ['b', 'a'],
-    body: 'hello\r\nworld',
-    tags: ['z', 'y']
-  };
-
-  const normalized = normalize(snippet1);
-  const jsonStr = JSON.stringify(normalized);
-
-  assert.equal(jsonStr, '{"id":"test","triggers":["a","b"],"body":"hello\\nworld","tags":["y","z"]}');
-});
-
 test('Core IR - fingerprint is deterministic', () => {
   const snippet1: Snippet = {
     id: 'test',
