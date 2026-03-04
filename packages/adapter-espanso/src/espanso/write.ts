@@ -1,5 +1,6 @@
 // write.ts - write IR back to espanso YAML
 import * as fs from 'fs';
+import * as path from 'path';
 import { ExportPlan } from '@snippet-engine-control/core';
 
 export function writeSnippets(plan: ExportPlan): void {
@@ -12,6 +13,10 @@ export function writeSnippets(plan: ExportPlan): void {
       if (!change.file || typeof change.content !== 'string') {
         continue;
       }
+
+      const dirPath = path.dirname(change.file);
+      fs.mkdirSync(dirPath, { recursive: true });
+
       const tmpPath = change.file + '.tmp';
       fs.writeFileSync(tmpPath, change.content, 'utf8');
 
