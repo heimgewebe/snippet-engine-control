@@ -1,18 +1,20 @@
 {
   "name": "@snippet-engine-control/adapter-espanso",
   "version": "0.1.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "scripts": {
     "build": "tsc -b",
-    "test": "echo \"Error: no test specified\" && exit 0",
+    "pretest": "npm run build",
+    "test": "node --test dist/test/*.test.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@snippet-engine-control/core": "*"
+    "@snippet-engine-control/core": "*",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
   }
 }
