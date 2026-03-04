@@ -1,11 +1,7 @@
-import { ExportPlan } from '@snippet-engine-control/core';
+import { buildExportPlan } from './plan';
 
-export function exportPlan(inputPath?: string) {
-  // Minimal MVP: empty or "no changes" plan, deterministic output
-  const plan: ExportPlan = {
-    changes: []
-  };
-
+export function exportPlan(options: { inputPath?: string; engine?: string; dir?: string }) {
+  const plan = buildExportPlan(options);
   console.log(JSON.stringify(plan, null, 2));
   process.exit(0);
 }
