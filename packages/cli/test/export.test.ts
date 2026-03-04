@@ -161,3 +161,34 @@ test('sec apply without --yes is a dry-run and writes nothing', (t) => {
 
   assert.equal(fs.existsSync(path.join(matchDir, 'sec.generated.yml')), false);
 });
+
+test('sec apply --yes creates match/ directory if it is missing', (t) => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-export-test-'));
+
+  t.after(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  // Specifically DO NOT create the matchDir here
+  const matchDir = path.join(tempDir, 'match');
+
+  const sourceJson = `
+[
+  {
+    "id": "snippet5",
+    "triggers": [";mkdir"],
+    "body": "created match dir",
+    "origin": { "source": "universal", "path": "test.json" }
+  }
+]
+`;
+  const inputPath = path.join(tempDir, 'source.json');
+  fs.writeFileSync(inputPath, sourceJson, 'utf8');
+
+  const cliPath = path.resolve(__dirname, '../src/index.js');
+
+  execSync(`node ${cliPath} apply --engine espanso --dir ${tempDir} --input ${inputPath} --yes`);
+
+  const managedContent = fs.readFileSync(path.join(matchDir, 'sec.generated.yml'), 'utf8');
+  assert.equal(managedContent.includes(';mkdir'), true);
+});
