@@ -1,13 +1,14 @@
 {
   "name": "@snippet-engine-control/cli",
   "version": "0.1.0",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "bin": {
-    "sec": "./dist/index.js"
+    "sec": "./dist/src/index.js"
   },
   "scripts": {
     "build": "tsc -b",
-    "test": "echo \"Error: no test specified\" && exit 0",
+    "pretest": "npm run build",
+    "test": "node --test dist/test/*.test.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

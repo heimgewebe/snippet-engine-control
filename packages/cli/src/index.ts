@@ -13,6 +13,7 @@ const command = args[0];
 let inputPath: string | undefined = process.env.SEC_SNIPPETS;
 let engine: string | undefined;
 let dir: string | undefined;
+let isDryRun = true;
 
 for (let i = 1; i < args.length; i++) {
   if (args[i] === '--input' && i + 1 < args.length) {
@@ -26,6 +27,8 @@ for (let i = 1; i < args.length; i++) {
   } else if (args[i] === '--dir' && i + 1 < args.length) {
     dir = args[i + 1];
     i++;
+  } else if (args[i] === '--yes') {
+    isDryRun = false;
   }
 }
 
@@ -34,10 +37,10 @@ switch (command) {
     validate({ inputPath, engine, dir });
     break;
   case 'export':
-    exportPlan(inputPath);
+    exportPlan({ inputPath, engine, dir });
     break;
   case 'apply':
-    apply();
+    apply({ inputPath, engine, dir, isDryRun });
     break;
   case 'doctor':
     doctor();

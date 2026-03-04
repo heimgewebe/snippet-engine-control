@@ -1,6 +1,38 @@
 // write.ts - write IR back to espanso YAML
-import { Snippet, ExportPlan } from '@snippet-engine-control/core';
+import * as fs from 'fs';
+import * as path from 'path';
+import { ExportPlan } from '@snippet-engine-control/core';
 
 export function writeSnippets(plan: ExportPlan): void {
-  // TODO
+  if (plan.unsupportedFeatures && plan.unsupportedFeatures.length > 0) {
+    throw new Error('Cannot apply plan with unsupported features: ' + plan.unsupportedFeatures.join(', '));
+  }
+
+  for (const change of plan.changes) {
+    if (change.action === 'create' || change.action === 'update') {
+      if (!change.file || typeof change.content !== 'string') {
+        continue;
+      }
+
+      const dirPath = path.dirname(change.file);
+      fs.mkdirSync(dirPath, { recursive: true });
+
+      const tmpPath = change.file + '.tmp';
+      fs.writeFileSync(tmpPath, change.content, 'utf8');
+
+      try {
+        if (fs.existsSync(change.file)) {
+          fs.rmSync(change.file, { force: true });
+        }
+        fs.renameSync(tmpPath, change.file);
+      } catch (err) {
+        if (fs.existsSync(tmpPath)) {
+          fs.rmSync(tmpPath, { force: true });
+        }
+        throw err;
+      }
+    } else if (change.action === 'delete') {
+      fs.rmSync(change.file, { force: true });
+    }
+  }
 }
