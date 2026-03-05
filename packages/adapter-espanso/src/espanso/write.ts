@@ -22,6 +22,9 @@ export function writeSnippets(plan: ExportPlan): void {
       }
 
       const tmpPath = change.file + '.tmp';
+      if (fs.existsSync(tmpPath)) {
+        fs.rmSync(tmpPath, { force: true });
+      }
       fs.writeFileSync(tmpPath, change.content, { encoding: 'utf8', mode: 0o600 });
       if (process.platform !== 'win32') {
         fs.chmodSync(tmpPath, 0o600);

@@ -109,3 +109,38 @@ test('Espanso Write Security - update sets restrictive permissions', (t) => {
 
   assertRestrictivePermissions(targetFile, false);
 });
+
+test('Espanso Write Security - stale permissive tmp file is removed', (t) => {
+  if (process.platform === 'win32') {
+    return;
+  }
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-espanso-stale-tmp-test-'));
+  t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
+  const targetFile = path.join(tmpDir, 'stale-tmp.yml');
+  const staleTmpFile = targetFile + '.tmp';
+
+  // Pre-create a stale tmp file with permissive permissions (0o666)
+  fs.writeFileSync(staleTmpFile, 'stale content', { mode: 0o666 });
+  const initialStat = fs.statSync(staleTmpFile);
+  // Verify it is indeed permissive (or at least not strictly 0o600 if umask allows)
+  // We just want to ensure our code fixes it.
+
+  const plan: any = {
+    changes: [
+      {
+        action: 'create',
+        file: targetFile,
+        content: 'fresh content'
+      }
+    ]
+  };
+
+  writeSnippets(plan);
+
+  // Final file should have restrictive permissions, even if the tmp it used was stale/permissive
+  assertRestrictivePermissions(targetFile, false);
+  assert.equal(fs.readFileSync(targetFile, 'utf8'), 'fresh content');
+  assert.equal(fs.existsSync(staleTmpFile), false, 'Stale tmp file should have been removed/renamed');
+});
