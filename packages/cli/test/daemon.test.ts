@@ -6,7 +6,11 @@ import { startDaemon } from '../src/daemon';
 test('Daemon Security - Token and Origin validation', async (t) => {
   // Start daemon on a random port
   const port = 4001 + Math.floor(Math.random() * 1000);
-  startDaemon(port, { host: '127.0.0.1' });
+  const daemon = startDaemon(port, { host: '127.0.0.1' });
+
+  t.after(() => {
+    daemon.server.close();
+  });
 
   // Helper to make requests
   const request = (path: string, options: http.RequestOptions, body?: string): Promise<{ statusCode: number, data: string }> => {
@@ -61,11 +65,13 @@ test('Daemon Security - Token and Origin validation', async (t) => {
     assert.match(res.data, /Missing or invalid X-SEC-Token/);
   });
 
-  // Extract token from HTML to make an authorized request
-  const htmlRes = await request('/', { method: 'GET' });
-  const tokenMatch = htmlRes.data.match(/window\.__SEC_TOKEN__ = "([a-f0-9]{64})";/);
-  assert.ok(tokenMatch, 'Should find token in HTML');
-  const token = tokenMatch[1];
+  // Use the exposed token from daemon instance
+  const token = daemon.token;
+
+  await t.test('GET / fetches HTML correctly with token', async () => {
+    const htmlRes = await request('/', { method: 'GET' });
+    assert.match(htmlRes.data, new RegExp(`window\\.__SEC_TOKEN__ = "${token}";`));
+  });
 
   await t.test('POST /api/preview with valid token succeeds', async () => {
     const res = await request('/api/preview', {
@@ -79,8 +85,4 @@ test('Daemon Security - Token and Origin validation', async (t) => {
     assert.equal(res.statusCode, 200);
     assert.match(res.data, /"preview":"test-success"/);
   });
-
-  // Try to stop the daemon gracefully if possible (we don't have a clean stop method exposed,
-  // but tests run in isolated processes via node test runner anyway. We'll leave it since the test process exits).
-  setTimeout(() => process.exit(0), 100);
 });

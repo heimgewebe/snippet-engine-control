@@ -2,6 +2,7 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import * as os from 'os';
 import {
   SnippetStore,
   Snippet,
@@ -18,8 +19,14 @@ const store = new SnippetStore();
 // Generate a cryptographically secure random token on startup
 const SEC_TOKEN = crypto.randomBytes(32).toString('hex');
 
-export function startDaemon(port = 4000, options: { dir?: string, host?: string } = {}) {
-  const host = options.host || '127.0.0.1'; // strictly bind to loopback by default
+export function startDaemon(port = 4000, options: { dir?: string, host?: string, allowLan?: boolean } = {}) {
+  let host = options.host || '127.0.0.1'; // strictly bind to loopback by default
+  const isLoopback = ['127.0.0.1', 'localhost', '::1'].includes(host);
+
+  if (!isLoopback && !options.allowLan) {
+    console.warn(`WARNING: Host ${host} is not a loopback address. Refusing to bind without --allow-lan flag for security. Falling back to 127.0.0.1.`);
+    host = '127.0.0.1';
+  }
 
   // Initialize store from Espanso files
   console.log('Loading snippets from Espanso...');
@@ -104,8 +111,14 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string 
 
   server.listen(port, host, () => {
     console.log(`SEC Snippet Studio UI running securely at http://${host}:${port}`);
-    console.log(`Bound to loopback. Token authentication enabled.`);
+    if (isLoopback) {
+      console.log(`Bound to loopback. Token authentication enabled.`);
+    } else {
+      console.warn(`\n!!! DANGER: LAN EXPOSURE !!!\nDaemon is bound to ${host}. Ensure you trust this network.\nToken authentication is enabled and REQUIRED.\n`);
+    }
   });
+
+  return { server, token: SEC_TOKEN, host, port };
 }
 
 function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, options: { dir?: string } = {}) {
@@ -113,14 +126,12 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
   const pathname = url.pathname;
   res.setHeader('Content-Type', 'application/json');
 
-  // Validate Token for state-changing methods
-  if (['PUT', 'POST', 'DELETE'].includes(req.method || 'GET')) {
-    const providedToken = req.headers['x-sec-token'];
-    if (!providedToken || providedToken !== SEC_TOKEN) {
-      res.writeHead(401);
-      res.end(JSON.stringify({ error: 'Unauthorized: Missing or invalid X-SEC-Token' }));
-      return;
-    }
+  // Validate Token for ALL API methods (prevents XS-Leaks for GET)
+  const providedToken = req.headers['x-sec-token'];
+  if (!providedToken || providedToken !== SEC_TOKEN) {
+    res.writeHead(401);
+    res.end(JSON.stringify({ error: 'Unauthorized: Missing or invalid X-SEC-Token' }));
+    return;
   }
 
   let body = '';
@@ -183,17 +194,12 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
         res.end(JSON.stringify({ preview }));
       }
       else if (req.method === 'POST' && pathname === '/api/export/dry-run') {
-        // Build export plan using current store instead of reading from disk again
-        // For the plan to work natively, we can mock the readSnippets call or
-        // implement a small hack since buildExportPlan calls `readSnippets(options.inputPath)` natively.
-        // For our MVP, we can bypass buildExportPlan entirely, or write the store to a temp file.
-        // But the easiest way is just implementing the diff inline or modifying `buildExportPlan` to accept snippets.
-
-        // Wait, for this vertical slice, we can just write current store to a temp file,
-        // and tell buildExportPlan to read from it.
-        const tmpPath = path.join(process.cwd(), '.sec.daemon.tmp.json');
+        // Write the store to a safe temp file to leverage existing buildExportPlan logic natively.
+        let tmpDir: string | undefined;
         try {
-          fs.writeFileSync(tmpPath, JSON.stringify(store.getAll()));
+          tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-daemon-'));
+          const tmpPath = path.join(tmpDir, 'sec.generated.tmp.json');
+          fs.writeFileSync(tmpPath, JSON.stringify(store.getAll()), { mode: 0o600 });
 
           // Pass the explicit dir to buildExportPlan to prevent failure if auto-discovery fails
           const plan = buildExportPlan({ engine: 'espanso', inputPath: tmpPath, dir: options.dir || path.join(process.cwd(), '.espanso') });
@@ -201,8 +207,8 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
           res.writeHead(200);
           res.end(JSON.stringify(plan));
         } finally {
-          if (fs.existsSync(tmpPath)) {
-            fs.unlinkSync(tmpPath); // cleanup
+          if (tmpDir && fs.existsSync(tmpDir)) {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
           }
         }
       }

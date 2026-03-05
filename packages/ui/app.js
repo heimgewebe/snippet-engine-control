@@ -26,7 +26,14 @@ const btnCloseModalFooter = document.getElementById('btn-close-modal-footer');
 
 async function fetchSnippets() {
   try {
-    const res = await fetch(`${API_BASE}/snippets`);
+    const res = await fetch(`${API_BASE}/snippets`, {
+      headers: { 'X-SEC-Token': window.__SEC_TOKEN__ }
+    });
+
+    if (!res.ok) {
+      throw new Error(`Status: ${res.status}`);
+    }
+
     snippets = await res.json();
     renderList();
     if (snippets.length > 0 && !currentSnippet) {

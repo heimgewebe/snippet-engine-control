@@ -52,13 +52,17 @@ switch (command) {
   case 'ui':
   case 'daemon':
     let host = '127.0.0.1';
+    let allowLan = false;
     for (let i = 1; i < args.length; i++) {
       if (args[i] === '--host' && i + 1 < args.length) {
         host = args[i + 1];
         i++;
       }
+      if (args[i] === '--allow-lan') {
+        allowLan = true;
+      }
     }
-    startDaemon(4000, { dir, host });
+    startDaemon(4000, { dir, host, allowLan });
     break;
   case undefined:
   case 'help':
