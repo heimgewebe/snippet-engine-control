@@ -122,10 +122,8 @@ test('Espanso Write Security - stale permissive tmp file is removed', (t) => {
   const staleTmpFile = targetFile + '.tmp';
 
   // Pre-create a stale tmp file with permissive permissions (0o666)
+  // We want to ensure our code removes/overwrites it with correct permissions.
   fs.writeFileSync(staleTmpFile, 'stale content', { mode: 0o666 });
-  const initialStat = fs.statSync(staleTmpFile);
-  // Verify it is indeed permissive (or at least not strictly 0o600 if umask allows)
-  // We just want to ensure our code fixes it.
 
   const plan: any = {
     changes: [
