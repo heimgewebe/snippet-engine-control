@@ -4,6 +4,12 @@ This document defines the strictly local HTTP API interface between the UI packa
 
 *Note: Schema refs are intended to be resolvable by standard JSON Schema tooling.*
 
+## Schema Resolution Strategy
+
+The contracts (`ui-api.schema.json`, `snippet.schema.json`) utilize absolute `$id` URIs (e.g., `https://snippet-engine-control.org/schema/...`) for stability and standard compliance. **These schemas are not guaranteed to be hosted online for live HTTP fetching.**
+
+When configuring a JSON Schema validator (e.g., `ajv`), CI pipeline, or IDE extension, you should **preload** these local files into your tool's schema registry offline rather than relying on network resolution.
+
 ## Security and Access Control
 
 Because the daemon serves a sensitive local API, it must adhere to strict security constraints to prevent Cross-Site Request Forgery (CSRF), Cross-Site Scripting leaks (XSS/XS-Leaks), and unauthorized Local Area Network (LAN) access:
