@@ -15,10 +15,10 @@ export function writeSnippets(plan: ExportPlan): void {
       }
 
       const dirPath = path.dirname(change.file);
-      fs.mkdirSync(dirPath, { recursive: true });
+      fs.mkdirSync(dirPath, { recursive: true, mode: 0o700 });
 
       const tmpPath = change.file + '.tmp';
-      fs.writeFileSync(tmpPath, change.content, 'utf8');
+      fs.writeFileSync(tmpPath, change.content, { encoding: 'utf8', mode: 0o600 });
 
       try {
         if (fs.existsSync(change.file)) {
