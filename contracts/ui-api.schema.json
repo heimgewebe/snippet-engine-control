@@ -3,8 +3,19 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "UI API Schema",
   "description": "JSON Schema for API interactions. NOTE: All state-changing endpoints must include the X-SEC-Token header for security.",
-  "type": "object",
-  "properties": {
+  "oneOf": [
+    { "$ref": "#/$defs/ValidationResponse" },
+    { "$ref": "#/$defs/PreviewResponse" },
+    { "$ref": "#/$defs/SnippetListResponse" },
+    { "$ref": "snippet.schema.json" }
+  ],
+  "$defs": {
+    "SnippetListResponse": {
+      "type": "array",
+      "items": {
+        "$ref": "snippet.schema.json"
+      }
+    },
     "ValidationResponse": {
       "type": "object",
       "properties": {
@@ -21,6 +32,7 @@
           "items": { "type": "string" }
         }
       },
+      "required": ["conflicts", "boundaries", "encodings"],
       "additionalProperties": false
     },
     "PreviewResponse": {
@@ -28,8 +40,8 @@
       "properties": {
         "preview": { "type": "string" }
       },
+      "required": ["preview"],
       "additionalProperties": false
     }
-  },
-  "additionalProperties": false
+  }
 }

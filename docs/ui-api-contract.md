@@ -10,14 +10,15 @@ Because the daemon serves a sensitive local API, it must adhere to strict securi
 2. **No Wildcard CORS:** The daemon MUST NOT use wildcard CORS headers (`Access-Control-Allow-Origin: *`). Cross-origin requests are denied.
 3. **Origin Enforcement:** The daemon MUST enforce `Origin` header restrictions. If an `Origin` header is present, it must strictly match the daemon's host (e.g., `http://127.0.0.1:<port>` or `http://localhost:<port>`). Otherwise, the request is rejected with `403 Forbidden`.
 4. **Authentication Token:** The daemon generates a random, unguessable cryptographic token on startup. This token is injected into the served HTML.
-   - ALL state-changing endpoints (`PUT`, `POST`, `DELETE`) MUST require this token via the `X-SEC-Token` HTTP header.
+   - ALL `/api/*` endpoints (including `GET /api/snippets`) MUST require this token via the `X-SEC-Token` HTTP header to prevent XS-Leaks and unintended local access. State-changing endpoints MUST require it.
    - Requests lacking a valid token MUST be rejected with `401 Unauthorized` or `403 Forbidden`.
 
 ---
 
 ## 1. Get All Snippets
 - **Endpoint:** `GET /api/snippets`
-- **Response:**
+- **Headers:** `X-SEC-Token: <token>`
+- **Response:** (Matches `#/$defs/SnippetListResponse` in `ui-api.schema.json`)
   ```json
   [
     {
@@ -32,15 +33,15 @@ Because the daemon serves a sensitive local API, it must adhere to strict securi
 ## 2. Update Snippet
 - **Endpoint:** `PUT /api/snippets/:id`
 - **Headers:** `X-SEC-Token: <token>`
-- **Request Body:** The full `Snippet` object.
-- **Response:** `200 OK` (with updated snippet object) or `401 Unauthorized`.
+- **Request Body:** The full `Snippet` object (Matches `snippet.schema.json`).
+- **Response:** `200 OK` (with updated snippet object matching `snippet.schema.json`) or `401 Unauthorized`.
 
 ## 3. Validate Snippet
 - **Endpoint:** `POST /api/diagnostics/validate`
 - **Headers:** `X-SEC-Token: <token>`
-- **Request Body:** The `Snippet` object currently being edited.
+- **Request Body:** The `Snippet` object currently being edited (Matches `snippet.schema.json`).
 - **Description:** Runs conflict, boundary, and encoding analyzers against the current snippet and the rest of the store.
-- **Response:**
+- **Response:** (Matches `#/$defs/ValidationResponse` in `ui-api.schema.json`)
   ```json
   {
     "conflicts": [],
@@ -52,8 +53,8 @@ Because the daemon serves a sensitive local API, it must adhere to strict securi
 ## 4. Preview Expansion
 - **Endpoint:** `POST /api/preview`
 - **Headers:** `X-SEC-Token: <token>`
-- **Request Body:** The `Snippet` object.
-- **Response:**
+- **Request Body:** The `Snippet` object (Matches `snippet.schema.json`).
+- **Response:** (Matches `#/$defs/PreviewResponse` in `ui-api.schema.json`)
   ```json
   {
     "preview": "Hello World"

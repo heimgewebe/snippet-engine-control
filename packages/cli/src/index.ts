@@ -54,11 +54,15 @@ switch (command) {
     let host = '127.0.0.1';
     let allowLan = false;
     for (let i = 1; i < args.length; i++) {
-      if (args[i] === '--host' && i + 1 < args.length) {
+      if (args[i] === '--host') {
+        if (i + 1 >= args.length || args[i + 1].startsWith('--')) {
+          console.error(`Error: --host requires a value.`);
+          console.error(`Usage: sec ui [--host <ip>] [--allow-lan]`);
+          process.exit(2);
+        }
         host = args[i + 1];
         i++;
-      }
-      if (args[i] === '--allow-lan') {
+      } else if (args[i] === '--allow-lan') {
         allowLan = true;
       }
     }
