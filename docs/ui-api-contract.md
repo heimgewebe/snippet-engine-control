@@ -33,13 +33,13 @@ Because the daemon serves a sensitive local API, it must adhere to strict securi
 ## 2. Update Snippet
 - **Endpoint:** `PUT /api/snippets/:id`
 - **Headers:** `X-SEC-Token: <token>`
-- **Request Body:** The full `Snippet` object (Matches `snippet.schema.json`).
-- **Response:** `200 OK` (with updated snippet object matching `snippet.schema.json`) or `401 Unauthorized`.
+- **Request Body:** The full `Snippet` object (Matches `https://snippet-engine-control.local/snippet.schema.json`).
+- **Response:** `200 OK` (with updated snippet object matching `https://snippet-engine-control.local/snippet.schema.json`) or `401 Unauthorized`.
 
 ## 3. Validate Snippet
 - **Endpoint:** `POST /api/diagnostics/validate`
 - **Headers:** `X-SEC-Token: <token>`
-- **Request Body:** The `Snippet` object currently being edited (Matches `snippet.schema.json`).
+- **Request Body:** The `Snippet` object currently being edited (Matches `https://snippet-engine-control.local/snippet.schema.json`).
 - **Description:** Runs conflict, boundary, and encoding analyzers against the current snippet and the rest of the store.
 - **Response:** (Matches `#/$defs/ValidationResponse` in `ui-api.schema.json`)
   ```json
@@ -53,7 +53,7 @@ Because the daemon serves a sensitive local API, it must adhere to strict securi
 ## 4. Preview Expansion
 - **Endpoint:** `POST /api/preview`
 - **Headers:** `X-SEC-Token: <token>`
-- **Request Body:** The `Snippet` object (Matches `snippet.schema.json`).
+- **Request Body:** The `Snippet` object (Matches `https://snippet-engine-control.local/snippet.schema.json`).
 - **Response:** (Matches `#/$defs/PreviewResponse` in `ui-api.schema.json`)
   ```json
   {
