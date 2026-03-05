@@ -1,6 +1,7 @@
 import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import {
   SnippetStore,
   Snippet,
@@ -14,7 +15,12 @@ import { buildExportPlan } from './plan';
 
 const store = new SnippetStore();
 
-export function startDaemon(port = 4000, options: { dir?: string } = {}) {
+// Generate a cryptographically secure random token on startup
+const SEC_TOKEN = crypto.randomBytes(32).toString('hex');
+
+export function startDaemon(port = 4000, options: { dir?: string, host?: string } = {}) {
+  const host = options.host || '127.0.0.1'; // strictly bind to loopback by default
+
   // Initialize store from Espanso files
   console.log('Loading snippets from Espanso...');
   const snippets = readSnippetsFromEspanso(options.dir);
@@ -24,19 +30,27 @@ export function startDaemon(port = 4000, options: { dir?: string } = {}) {
   const uiDir = path.resolve(__dirname, '../../../ui');
 
   const server = http.createServer((req, res) => {
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
-      return;
+    // Origin Enforcement
+    const origin = req.headers.origin;
+    if (origin) {
+      const allowedOrigins = [
+        `http://127.0.0.1:${port}`,
+        `http://localhost:${port}`,
+        `http://${host}:${port}`
+      ];
+      // Special case for IPv6 loopback
+      if (host === '::1') {
+         allowedOrigins.push(`http://[::1]:${port}`);
+      }
+      if (!allowedOrigins.includes(origin)) {
+        res.writeHead(403);
+        res.end('Forbidden: Invalid Origin');
+        return;
+      }
     }
 
     if (req.url && req.url.startsWith('/api/')) {
-      handleApiRequest(req, res);
+      handleApiRequest(req, res, options);
       return;
     }
 
@@ -67,12 +81,30 @@ export function startDaemon(port = 4000, options: { dir?: string } = {}) {
 
       const contentType = mimeTypes[ext] || 'text/plain';
       res.setHeader('Content-Type', contentType);
-      fs.createReadStream(filePath).pipe(res);
+
+      if (ext === '.html') {
+        // Inject token into HTML
+        fs.readFile(filePath, 'utf8', (readErr, content) => {
+          if (readErr) {
+            res.writeHead(500);
+            res.end('Internal Server Error');
+            return;
+          }
+          const injected = content.replace(
+            '</head>',
+            `<script>window.__SEC_TOKEN__ = "${SEC_TOKEN}";</script>\n</head>`
+          );
+          res.end(injected);
+        });
+      } else {
+        fs.createReadStream(filePath).pipe(res);
+      }
     });
   });
 
-  server.listen(port, () => {
-    console.log(`SEC Snippet Studio UI running at http://localhost:${port}`);
+  server.listen(port, host, () => {
+    console.log(`SEC Snippet Studio UI running securely at http://${host}:${port}`);
+    console.log(`Bound to loopback. Token authentication enabled.`);
   });
 }
 
@@ -80,6 +112,16 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
   const url = new URL(req.url!, `http://${req.headers.host}`);
   const pathname = url.pathname;
   res.setHeader('Content-Type', 'application/json');
+
+  // Validate Token for state-changing methods
+  if (['PUT', 'POST', 'DELETE'].includes(req.method || 'GET')) {
+    const providedToken = req.headers['x-sec-token'];
+    if (!providedToken || providedToken !== SEC_TOKEN) {
+      res.writeHead(401);
+      res.end(JSON.stringify({ error: 'Unauthorized: Missing or invalid X-SEC-Token' }));
+      return;
+    }
+  }
 
   let body = '';
   req.on('data', chunk => {
@@ -101,6 +143,13 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
         const saved = store.put(draft, id);
         res.writeHead(200);
         res.end(JSON.stringify(saved));
+      }
+      else if (req.method === 'DELETE' && pathname.startsWith('/api/snippets/')) {
+        const parts = pathname.split('/');
+        const id = parts[parts.length - 1];
+        const deleted = store.delete(id);
+        res.writeHead(200);
+        res.end(JSON.stringify({ success: deleted }));
       }
       else if (req.method === 'POST' && pathname === '/api/diagnostics/validate') {
         const draft = JSON.parse(body) as Snippet;

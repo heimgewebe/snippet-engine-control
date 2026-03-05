@@ -51,7 +51,14 @@ switch (command) {
     break;
   case 'ui':
   case 'daemon':
-    startDaemon(4000, { dir });
+    let host = '127.0.0.1';
+    for (let i = 1; i < args.length; i++) {
+      if (args[i] === '--host' && i + 1 < args.length) {
+        host = args[i + 1];
+        i++;
+      }
+    }
+    startDaemon(4000, { dir, host });
     break;
   case undefined:
   case 'help':

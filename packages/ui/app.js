@@ -115,7 +115,10 @@ async function triggerValidation() {
   try {
     const res = await fetch(`${API_BASE}/diagnostics/validate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SEC-Token': window.__SEC_TOKEN__
+      },
       body: JSON.stringify(currentSnippet)
     });
 
@@ -131,7 +134,10 @@ async function triggerPreview() {
   try {
     const res = await fetch(`${API_BASE}/preview`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SEC-Token': window.__SEC_TOKEN__
+      },
       body: JSON.stringify(currentSnippet)
     });
     const data = await res.json();
@@ -177,7 +183,10 @@ btnSave.addEventListener('click', async () => {
   try {
     const res = await fetch(`${API_BASE}/snippets/${draft.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SEC-Token': window.__SEC_TOKEN__
+      },
       body: JSON.stringify(draft)
     });
     const saved = await res.json();
@@ -213,20 +222,44 @@ btnNew.addEventListener('click', () => {
 });
 
 btnDelete.addEventListener('click', async () => {
-  // Mock delete since we only require PUT for the MVP but good to have a simple local state removal
   if (!currentSnippet) return;
+
+  // Prevent deleting new unsaved snippets that haven't been PUT to server yet
+  if (currentSnippet.id.startsWith('new-')) {
+    const idx = snippets.findIndex(s => s.id === currentSnippet.id);
+    if (idx >= 0) snippets.splice(idx, 1);
+    currentSnippet = null;
+    renderList();
+    if (snippets.length > 0) selectSnippet(snippets[0].id);
+    return;
+  }
+
   if (!confirm('Remove this snippet?')) return;
 
-  const idx = snippets.findIndex(s => s.id === currentSnippet.id);
-  if (idx >= 0) snippets.splice(idx, 1);
-  currentSnippet = null;
-  renderList();
-  if (snippets.length > 0) {
-    selectSnippet(snippets[0].id);
-  } else {
-    inputId.value = '';
-    inputTriggers.value = '';
-    inputBody.value = '';
+  try {
+    const res = await fetch(`${API_BASE}/snippets/${currentSnippet.id}`, {
+      method: 'DELETE',
+      headers: { 'X-SEC-Token': window.__SEC_TOKEN__ }
+    });
+
+    if (res.ok) {
+      const idx = snippets.findIndex(s => s.id === currentSnippet.id);
+      if (idx >= 0) snippets.splice(idx, 1);
+      currentSnippet = null;
+      renderList();
+      if (snippets.length > 0) {
+        selectSnippet(snippets[0].id);
+      } else {
+        inputId.value = '';
+        inputTriggers.value = '';
+        inputBody.value = '';
+      }
+    } else {
+      alert('Failed to delete');
+    }
+  } catch (err) {
+    console.error('Delete error:', err);
+    alert('Failed to delete');
   }
 });
 
@@ -234,7 +267,10 @@ btnDryrun.addEventListener('click', async () => {
   modalExport.classList.add('open');
   exportContent.textContent = 'Generating plan...';
   try {
-    const res = await fetch(`${API_BASE}/export/dry-run`, { method: 'POST' });
+    const res = await fetch(`${API_BASE}/export/dry-run`, {
+      method: 'POST',
+      headers: { 'X-SEC-Token': window.__SEC_TOKEN__ }
+    });
     const plan = await res.json();
     exportContent.textContent = JSON.stringify(plan, null, 2);
   } catch(err) {

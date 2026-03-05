@@ -2,6 +2,7 @@
   "$id": "https://snippet-engine-control.org/schema/ui-api.schema.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "UI API Schema",
+  "description": "JSON Schema for API interactions. NOTE: All state-changing endpoints must include the X-SEC-Token header for security.",
   "type": "object",
   "properties": {
     "ValidationResponse": {
