@@ -1,4 +1,5 @@
 export * from './model/snippet';
+export * from './model/store';
 export * from './model/engine';
 export * from './model/diagnostics';
 export * from './ir/normalize';
@@ -6,4 +7,5 @@ export * from './ir/fingerprint';
 export * from './analyzers/conflicts';
 export * from './analyzers/boundaries';
 export * from './analyzers/encoding';
+export * from './analyzers/preview';
 export * from './export/plan';

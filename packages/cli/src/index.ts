@@ -5,6 +5,7 @@ import { exportPlan } from './export';
 import { apply } from './apply';
 import { doctor } from './doctor';
 import { lint } from './lint';
+import { startDaemon } from './daemon';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -48,12 +49,32 @@ switch (command) {
   case 'lint':
     lint(inputPath);
     break;
+  case 'ui':
+  case 'daemon':
+    let host = '127.0.0.1';
+    let allowLan = false;
+    for (let i = 1; i < args.length; i++) {
+      if (args[i] === '--host') {
+        if (i + 1 >= args.length || args[i + 1].startsWith('--')) {
+          console.error(`Error: --host requires a value.`);
+          console.error(`Usage: sec ui [--host <ip>] [--allow-lan]`);
+          process.exit(2);
+        }
+        host = args[i + 1];
+        i++;
+      } else if (args[i] === '--allow-lan') {
+        allowLan = true;
+      }
+    }
+    startDaemon(4000, { dir, host, allowLan });
+    break;
   case undefined:
   case 'help':
     console.log(`
 Usage: sec <command>
 
 Commands:
+  ui         Start the Snippet Editing Platform UI (daemon)
   validate   Validate IR and engine constraints
   export     Show diffable export plan (dry-run)
   apply      Write and apply snippets

@@ -1,0 +1,44 @@
+{
+  "$id": "https://snippet-engine-control.org/schema/ui-api.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UI API Schema",
+  "type": "object",
+  "description": "Container for UI API payload definitions. Use $ref into $defs for specific endpoints. NOTE: ALL /api/* endpoints must include the X-SEC-Token header for security.",
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "SnippetListResponse": {
+      "type": "array",
+      "items": {
+        "$ref": "https://snippet-engine-control.org/schema/snippet.schema.json"
+      }
+    },
+    "ValidationResponse": {
+      "type": "object",
+      "properties": {
+        "conflicts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "boundaries": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "encodings": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["conflicts", "boundaries", "encodings"],
+      "additionalProperties": false
+    },
+    "PreviewResponse": {
+      "type": "object",
+      "properties": {
+        "preview": { "type": "string" }
+      },
+      "required": ["preview"],
+      "additionalProperties": false
+    }
+  }
+}
