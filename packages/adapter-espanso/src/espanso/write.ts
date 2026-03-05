@@ -15,9 +15,10 @@ export function writeSnippets(plan: ExportPlan): void {
       }
 
       const dirPath = path.dirname(change.file);
+      const dirExists = fs.existsSync(dirPath);
       fs.mkdirSync(dirPath, { recursive: true });
-      // Only enforce 0o700 if we are on a non-Windows platform
-      if (process.platform !== 'win32') {
+      // Only enforce 0o700 for newly created directories on non-Windows platforms
+      if (!dirExists && process.platform !== 'win32') {
         fs.chmodSync(dirPath, 0o700);
       }
 

@@ -142,3 +142,38 @@ test('Espanso Write Security - stale permissive tmp file is removed', (t) => {
   assert.equal(fs.readFileSync(targetFile, 'utf8'), 'fresh content');
   assert.equal(fs.existsSync(staleTmpFile), false, 'Stale tmp file should have been removed/renamed');
 });
+
+test('Espanso Write Security - existing directory permissions are not changed', (t) => {
+  if (process.platform === 'win32') {
+    return;
+  }
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-espanso-existing-dir-test-'));
+  t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
+  const targetDir = path.join(tmpDir, 'existing-dir');
+  // Create directory with permissive permissions (0o755)
+  fs.mkdirSync(targetDir, { recursive: true });
+  fs.chmodSync(targetDir, 0o755);
+
+  const targetFile = path.join(targetDir, 'test.yml');
+
+  const plan: any = {
+    changes: [
+      {
+        action: 'create',
+        file: targetFile,
+        content: 'hello: world'
+      }
+    ]
+  };
+
+  writeSnippets(plan);
+
+  // Directory permissions should remain 0o755
+  const dirStat = fs.statSync(targetDir);
+  assert.equal(dirStat.mode & 0o777, 0o755, 'Existing directory permissions should be preserved');
+
+  // File permissions should still be restrictive
+  assertRestrictivePermissions(targetFile, false);
+});
