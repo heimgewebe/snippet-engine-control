@@ -1,0 +1,34 @@
+{
+  "$id": "https://snippet-engine-control.org/schema/ui-api.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UI API Schema",
+  "type": "object",
+  "properties": {
+    "ValidationResponse": {
+      "type": "object",
+      "properties": {
+        "conflicts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "boundaries": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "encodings": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "PreviewResponse": {
+      "type": "object",
+      "properties": {
+        "preview": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

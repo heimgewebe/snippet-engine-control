@@ -5,6 +5,7 @@ import { exportPlan } from './export';
 import { apply } from './apply';
 import { doctor } from './doctor';
 import { lint } from './lint';
+import { startDaemon } from './daemon';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -48,12 +49,17 @@ switch (command) {
   case 'lint':
     lint(inputPath);
     break;
+  case 'ui':
+  case 'daemon':
+    startDaemon(4000, { dir });
+    break;
   case undefined:
   case 'help':
     console.log(`
 Usage: sec <command>
 
 Commands:
+  ui         Start the Snippet Editing Platform UI (daemon)
   validate   Validate IR and engine constraints
   export     Show diffable export plan (dry-run)
   apply      Write and apply snippets
