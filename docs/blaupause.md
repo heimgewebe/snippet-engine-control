@@ -60,7 +60,7 @@ Sie dürfen nicht:
 
 ## 5. Save ≠ Apply ist unverhandelbar
 
-* `saveDraft`: interner Zustand
+* `saveDraft`: interner Zustand (Persistenzdomäne/Ziel für Drafts aktuell offene Designentscheidung)
 * `buildPlan`: Änderungsvorschau
 * `applyPlan`: externe Wirkung
 
@@ -203,7 +203,7 @@ Weil Fingerprints gute Revisionsmarker und schlechte Personenkennzeichen sind.
 
 ## 5. SaveDraft
 
-* speichert internen Workspace-/Draft-Zustand
+* speichert internen Workspace-/Draft-Zustand (interne Persistenzgrenze)
 * keine externen Engine-Dateien
 
 ## 6. BuildPlan
@@ -225,12 +225,20 @@ Weil Fingerprints gute Revisionsmarker und schlechte Personenkennzeichen sind.
 
 ---
 
+# Gedächtnis-Klassen: Draft, History und Snapshot
+
+* **saveDraft**: interne Persistenzgrenze. Sichert den lokalen Workspace-Zustand. Ob dies In-Memory, in einer lokalen Workspace-Datei oder einer Sidecar-Datei passiert, ist noch eine **offene Designentscheidung**.
+* **history**: editorinterne State-Evolution. Betrifft lokales Undo/Redo sowie den Verlauf des Workspace-/Dokument-Zustands über Zeit.
+* **snapshot**: Pre-Apply Sicherheitsgrenze für externe Effekte. Dient als Backup *vor* Änderungen an Engine-Dateien und erlaubt den Restore nach einem Rollout-Fehler.
+
+---
+
 # Services im App-Layer
 
 ## Pflicht-Services
 
 ### WorkspaceService
-
+Repo target: `packages/app/src/services/workspace.ts`
 * openWorkspace
 * selectDocument
 * updateDocument
@@ -238,36 +246,36 @@ Weil Fingerprints gute Revisionsmarker und schlechte Personenkennzeichen sind.
 * workspace state transitions
 
 ### ValidationService
-
+Repo target: `packages/app/src/services/validation.ts`
 * validateDocument
 * validateWorkspace
 * derived diagnostics
 
 ### PreviewService
-
+Repo target: `packages/app/src/services/preview.ts`
 * previewDocument
 * previewWorkspaceContext
 * später Simulationsebenen
 
 ### PlanService
-
+Repo target: `packages/app/src/services/plan.ts`
 * buildPlan
 * calculateImpact
 * outdated-plan detection
 
 ### ApplyService
-
+Repo target: `packages/app/src/services/apply.ts`
 * applyPlan
 * trigger verification
 * emit apply result
 
 ### SnapshotService
-
+Repo target: `packages/app/src/services/snapshot.ts`
 * pre-apply snapshot
 * restore latest snapshot
 
 ### HistoryService
-
+Repo target: `packages/app/src/services/history.ts`
 * undo/redo
 * local revisions
 * last-applied state
@@ -383,18 +391,20 @@ open → edit → validate → preview → dry-run → apply → verify
 # Entwicklungsphasen: die optimale Reihenfolge
 
 ## Phase 0 — Diagnose & Product-Truth
+Status: planned
 
 ### Ziel
 
 Keine stillen Annahmen.
 
 ### Aufgaben
-
-* ID-Impact-Map
-* Flow-Map
-* Packaging-Truth
-* Apply-Truth
-* ADR: stabile Identität + Produktfluss
+- [ ] grep/rg all uses of snippet.id
+- [ ] list all fingerprint producers
+- [ ] trace daemon serving path for /
+- [ ] trace UI asset path for app.js
+- [ ] verify CLI build output path
+- [ ] run one full flow: validate -> dry-run -> apply
+- [ ] document exact command lines and expected outputs
 
 ### Output
 
@@ -413,17 +423,17 @@ Klarheit darüber:
 ---
 
 ## Phase 1 — Stabile Identität
+Status: planned
 
 ### Ziel
 
 `stableId + revisionId`
 
 ### Aufgaben
-
-* Datenmodell erweitern
-* Store umbauen
-* Adapter-Import-Mapping
-* Tests
+- [ ] Datenmodell erweitern
+- [ ] Store umbauen
+- [ ] Adapter-Import-Mapping
+- [ ] Tests
 
 ### Stop-Kriterium
 
@@ -432,17 +442,17 @@ Dokumentidentität bleibt im Editor stabil.
 ---
 
 ## Phase 2 — Workspace-Modell
+Status: planned
 
 ### Ziel
 
 Kanonischer `Workspace`
 
 ### Aufgaben
-
-* Workspace-Typen
-* aktives Dokument
-* Dirty-/Derived-State
-* Session-Grundlage
+- [ ] Workspace-Typen
+- [ ] aktives Dokument
+- [ ] Dirty-/Derived-State
+- [ ] Session-Grundlage
 
 ### Stop-Kriterium
 
@@ -451,6 +461,7 @@ Die App kann mehrere Dokumente logisch verwalten.
 ---
 
 ## Phase 3 — Produktfluss
+Status: planned
 
 ### Ziel
 
@@ -461,11 +472,10 @@ saveDraft → buildPlan → applyPlan
 ```
 
 ### Aufgaben
-
-* DraftService
-* PlanService
-* Apply-Orchestrierung
-* UI/CLI daran anschließen
+- [ ] DraftService
+- [ ] PlanService
+- [ ] Apply-Orchestrierung
+- [ ] UI/CLI daran anschließen
 
 ### Stop-Kriterium
 
@@ -474,17 +484,17 @@ Der Produktfluss ist ohne UI testbar.
 ---
 
 ## Phase 4 — Packaging + E2E
+Status: planned
 
 ### Ziel
 
 Produktwahrheit belegen.
 
 ### Aufgaben
-
-* CLI-Build-Truth
-* Daemon/UI-Serving-Truth
-* E2E-Smoke
-* ein echter Produktpfad
+- [ ] CLI-Build-Truth
+- [ ] Daemon/UI-Serving-Truth
+- [ ] E2E-Smoke
+- [ ] ein echter Produktpfad
 
 ### Stop-Kriterium
 
@@ -493,17 +503,17 @@ Das Produkt läuft reproduzierbar, nicht nur seine Pakete.
 ---
 
 ## Phase 5 — Verification + Minimal Safety
+Status: planned
 
 ### Ziel
 
 Apply vertrauenswürdig machen.
 
 ### Aufgaben
-
-* post-apply verification
-* runtime health
-* pre-apply snapshot
-* rollback latest apply
+- [ ] post-apply verification
+- [ ] runtime health
+- [ ] pre-apply snapshot
+- [ ] rollback latest apply
 
 ### Stop-Kriterium
 
@@ -512,17 +522,17 @@ Ein fehlgeschlagenes Apply ist erkennbar und begrenzbar.
 ---
 
 ## Phase 6 — Preview ausbauen
+Status: planned
 
 ### Ziel
 
 Preview entscheidungsrelevant machen.
 
 ### Ebenen
-
-1. static
-2. template-aware
-3. engine-aware
-4. expansion trace
+- [ ] 1. static
+- [ ] 2. template-aware
+- [ ] 3. engine-aware
+- [ ] 4. expansion trace
 
 ### Stop-Kriterium
 
@@ -531,17 +541,17 @@ Preview hilft real bei Konflikt- und Rollout-Entscheidungen.
 ---
 
 ## Phase 7 — History / Undo / Restore
+Status: planned
 
 ### Ziel
 
 Interne Vertrauensschicht
 
 ### Aufgaben
-
-* workspace history
-* document revision history
-* undo/redo
-* restore from snapshot
+- [ ] workspace history
+- [ ] document revision history
+- [ ] undo/redo
+- [ ] restore from snapshot
 
 ### Stop-Kriterium
 
@@ -550,20 +560,20 @@ Benutzerfehler sind reparierbar.
 ---
 
 ## Phase 8 — Workbench-Komfort
+Status: planned
 
 ### Ziel
 
 IDE-Reichtum, aber auf stabilem Fundament.
 
 ### Aufgaben
-
-* Explorer
-* Tabs
-* Search/Filter
-* Conflict navigation
-* Statusbar
-* Command bar
-* Settings
+- [ ] Explorer
+- [ ] Tabs
+- [ ] Search/Filter
+- [ ] Conflict navigation
+- [ ] Statusbar
+- [ ] Command bar
+- [ ] Settings
 
 ### Stop-Kriterium
 
@@ -573,41 +583,15 @@ Mehr Komfort ohne neue Semantikdrift.
 
 # Umsetzungsreihenfolge als PR-Kette
 
-## PR 0
-
-**diagnose(product): map id-flow, apply-flow and packaging truth**
-
-## PR 1
-
-**refactor(app): introduce stableId/revisionId document model**
-
-## PR 2
-
-**feat(app): add canonical workspace model and session state**
-
-## PR 3
-
-**refactor(app): explicit saveDraft/buildPlan/applyPlan flow**
-
-## PR 4
-
-**build(e2e): prove product flow end-to-end**
-
-## PR 5
-
-**feat(runtime): verification and minimal apply safety**
-
-## PR 6
-
-**feat(preview): layered preview pipeline**
-
-## PR 7
-
-**feat(history): workspace snapshots and undo/redo**
-
-## PR 8+
-
-**feat(ui): workbench comfort and navigation**
+- [ ] **PR 0** diagnose(product): map id-flow, apply-flow and packaging truth
+- [ ] **PR 1** refactor(app): introduce stableId/revisionId document model
+- [ ] **PR 2** feat(app): add canonical workspace model and session state
+- [ ] **PR 3** refactor(app): explicit saveDraft/buildPlan/applyPlan flow
+- [ ] **PR 4** build(e2e): prove product flow end-to-end
+- [ ] **PR 5** feat(runtime): verification and minimal apply safety
+- [ ] **PR 6** feat(preview): layered preview pipeline
+- [ ] **PR 7** feat(history): workspace snapshots and undo/redo
+- [ ] **PR 8+** feat(ui): workbench comfort and navigation
 
 ---
 
