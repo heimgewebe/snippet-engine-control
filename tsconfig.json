@@ -15,6 +15,7 @@
   "references": [
     { "path": "./packages/core" },
     { "path": "./packages/adapter-espanso" },
+    { "path": "./packages/app" },
     { "path": "./packages/cli" }
   ]
 }

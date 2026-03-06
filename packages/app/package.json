@@ -1,10 +1,8 @@
 {
-  "name": "@snippet-engine-control/cli",
+  "name": "@snippet-engine-control/app",
   "version": "0.1.0",
   "main": "dist/src/index.js",
-  "bin": {
-    "sec": "./dist/src/index.js"
-  },
+  "types": "dist/src/index.d.ts",
   "scripts": {
     "build": "tsc -b",
     "pretest": "npm run build",
@@ -12,8 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@snippet-engine-control/adapter-espanso": "*",
-    "@snippet-engine-control/app": "*",
     "@snippet-engine-control/core": "*"
   },
   "devDependencies": {

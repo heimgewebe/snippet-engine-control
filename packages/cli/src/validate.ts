@@ -1,100 +1,48 @@
 import { readSnippets, readSnippetsFromEspanso } from '@snippet-engine-control/adapter-espanso';
-import { normalize, analyzeConflicts, analyzeBoundaries, analyzeEncoding } from '@snippet-engine-control/core';
-
-export interface ValidateOptions {
-  inputPath?: string;
-  engine?: string;
-  dir?: string;
-}
+import { WorkspaceService, ValidateOptions } from '@snippet-engine-control/app';
 
 export function validate(options: ValidateOptions | string = {}) {
   console.log('Validating snippets...');
 
   const opts = typeof options === 'string' ? { inputPath: options } : options;
 
-  let snippets;
+  // The CLI connects the app layer to the concrete espanso adapter
+  const workspaceService = new WorkspaceService({
+    readSnippets,
+    readSnippetsFromEngine: readSnippetsFromEspanso,
+    writeSnippets: () => { throw new Error("writeSnippets is not supported in this flow"); }
+  });
+
+  let result;
   try {
-    if (opts.engine === 'espanso') {
-      snippets = readSnippetsFromEspanso(opts.dir);
-    } else {
-      snippets = readSnippets(opts.inputPath);
-    }
+    result = workspaceService.validate(opts);
   } catch (error) {
     console.error(`Input error: ${(error as Error).message}`);
     process.exit(2);
   }
 
-  const encodingDiag = analyzeEncoding(snippets); // Encoding on raw to catch CRLF
-
-  const normalizedSnippets = snippets.map(normalize);
-
-  const conflictsDiag = analyzeConflicts(normalizedSnippets);
-  const boundariesDiag = analyzeBoundaries(normalizedSnippets);
-
-  // Accumulate diagnostics
-  const allCollisions = conflictsDiag.triggerCollisions;
-  const allAmbiguous = boundariesDiag.ambiguousBoundaries;
-  const allEncoding = encodingDiag.encodingIssues;
-
-  let hasErrors = false;
-
-  const formatIssue = (issue: string, snippetId?: string) => {
-    // Find all snippets involved in this issue to extract paths
-    const matchedPaths = new Set<string>();
-
-    if (snippetId) {
-      const s = normalizedSnippets.find(s => s.id === snippetId);
-      if (s?.origin?.path) matchedPaths.add(s.origin.path);
-    }
-
-    // Check for "Snippet 'id'" format from boundary/encoding analyzers
-    const snippetMatchRegex = /Snippet\s+'([^']+)'/g;
-    let match;
-    while ((match = snippetMatchRegex.exec(issue)) !== null) {
-      const id = match[1];
-      const s = normalizedSnippets.find(s => s.id === id);
-      if (s?.origin?.path) matchedPaths.add(s.origin.path);
-    }
-
-    // Check for "used by ids: a, b" format from conflict analyzer
-    const idsMatch = issue.match(/used by ids:\s*([^\n]+)/);
-    if (idsMatch && idsMatch[1]) {
-      const ids = idsMatch[1].split(',').map(id => id.trim()).filter(id => id.length > 0);
-      ids.forEach(id => {
-        const s = normalizedSnippets.find(s => s.id === id);
-        if (s?.origin?.path) matchedPaths.add(s.origin.path);
-      });
-    }
-
-    if (matchedPaths.size > 0) {
-      return `${issue} (paths: ${Array.from(matchedPaths).join(', ')})`;
-    }
-    return issue;
-  };
-
-  if (allCollisions.length > 0) {
+  if (result.collisions.length > 0) {
     console.error('Validation failed: Trigger collisions found:');
-    allCollisions.forEach((collision: string) => {
-      console.error(`- ${formatIssue(collision)}`);
+    result.collisions.forEach((collision: string) => {
+      console.error(`- ${collision}`);
     });
-    hasErrors = true;
   }
 
-  if (allAmbiguous.length > 0) {
+  if (result.ambiguous.length > 0) {
     console.warn('Warnings: Ambiguous boundaries found:');
-    allAmbiguous.forEach((issue: string) => {
-      console.warn(`- ${formatIssue(issue)}`);
+    result.ambiguous.forEach((issue: string) => {
+      console.warn(`- ${issue}`);
     });
   }
 
-  if (allEncoding.length > 0) {
+  if (result.encoding.length > 0) {
     console.warn('Warnings: Encoding issues found:');
-    allEncoding.forEach((issue: string) => {
-      console.warn(`- ${formatIssue(issue)}`);
+    result.encoding.forEach((issue: string) => {
+      console.warn(`- ${issue}`);
     });
   }
 
-  if (hasErrors) {
+  if (result.hasErrors) {
     process.exit(1);
   }
 

@@ -6,8 +6,6 @@
   },
   "include": ["src/**/*", "test/**/*"],
   "references": [
-    { "path": "../core" },
-    { "path": "../adapter-espanso" },
-    { "path": "../app" }
+    { "path": "../core" }
   ]
 }
