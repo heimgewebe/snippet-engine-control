@@ -1,6 +1,6 @@
 import { Snippet, ExportPlan } from '@snippet-engine-control/core';
 
-export interface EnginePort {
+export interface EngineReadPort {
   /**
    * Reads snippets from a source path
    */
@@ -10,7 +10,9 @@ export interface EnginePort {
    * Reads snippets directly from the engine's configuration directory
    */
   readSnippetsFromEngine(dir?: string): Snippet[];
+}
 
+export interface EngineWritePort {
   /**
    * Writes the given export plan to the engine
    */

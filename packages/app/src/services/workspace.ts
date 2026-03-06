@@ -1,4 +1,4 @@
-import { EnginePort } from '../ports/engine';
+import { EngineReadPort } from '../ports/engine';
 import { Snippet } from '@snippet-engine-control/core';
 import { ValidationService, ValidationResult } from './validation';
 
@@ -9,7 +9,7 @@ export interface ValidateOptions {
 }
 
 export class WorkspaceService {
-  constructor(private engine: EnginePort) {}
+  constructor(private engine: EngineReadPort) {}
 
   public loadSnippets(options: ValidateOptions): Snippet[] {
     if (options.engine === 'espanso') {

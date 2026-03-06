@@ -1,11 +1,8 @@
 import { ExportPlan } from '@snippet-engine-control/core';
-
-export interface WritePort {
-  writeSnippets(plan: ExportPlan): void;
-}
+import { EngineWritePort } from '../ports/engine';
 
 export class ApplyService {
-  constructor(private port: WritePort) {}
+  constructor(private port: EngineWritePort) {}
 
   public applyPlan(plan: ExportPlan, isDryRun: boolean = true): boolean {
     if (plan.unsupportedFeatures && plan.unsupportedFeatures.length > 0) {
