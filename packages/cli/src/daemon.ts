@@ -5,13 +5,10 @@ import * as crypto from 'crypto';
 import * as os from 'os';
 import {
   SnippetStore,
-  Snippet,
-  analyzeConflicts,
-  analyzeBoundaries,
-  analyzeEncoding,
-  simulateExpansion
+  Snippet
 } from '@snippet-engine-control/core';
 import { readSnippetsFromEspanso } from '@snippet-engine-control/adapter-espanso';
+import { WorkspaceService, SnippetService } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
 
 const store = new SnippetStore();
@@ -170,26 +167,26 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
         const all = store.getAll().filter(s => s.id !== draft.id);
         all.push(draft);
 
-        const conflictsDiag = analyzeConflicts(all);
-        const boundariesDiag = analyzeBoundaries(all);
-        const encodingDiag = analyzeEncoding(all);
+        const workspaceService = new WorkspaceService({ readSnippets: () => [], readSnippetsFromEngine: () => [], writeSnippets: () => {} });
+        const diag = workspaceService.validateSnippets(all);
 
         // Filter diagnostics to only show warnings/errors related to the draft
         // (For conflicts, we simply check if its triggers are involved)
-        const relevantConflicts = conflictsDiag.triggerCollisions.filter((c: string) =>
+        const relevantConflicts = diag.collisions.filter((c: string) =>
           c.includes(draft.id) || draft.triggers.some((t: string) => c.includes(`'${t}'`))
         );
 
         res.writeHead(200);
         res.end(JSON.stringify({
           conflicts: relevantConflicts,
-          boundaries: boundariesDiag.ambiguousBoundaries.filter((b: string) => b.includes(draft.id) || b.includes('new snippet')),
-          encodings: encodingDiag.encodingIssues.filter((e: string) => e.includes(draft.id) || e.includes('new snippet'))
+          boundaries: diag.ambiguous.filter((b: string) => b.includes(draft.id) || b.includes('new snippet')),
+          encodings: diag.encoding.filter((e: string) => e.includes(draft.id) || e.includes('new snippet'))
         }));
       }
       else if (req.method === 'POST' && pathname === '/api/preview') {
         const draft = JSON.parse(body) as Snippet;
-        const preview = simulateExpansion(draft);
+        const snippetService = new SnippetService();
+        const preview = snippetService.preview(draft);
         res.writeHead(200);
         res.end(JSON.stringify({ preview }));
       }
