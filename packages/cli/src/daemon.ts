@@ -8,7 +8,7 @@ import {
   Snippet
 } from '@snippet-engine-control/core';
 import { readSnippetsFromEspanso } from '@snippet-engine-control/adapter-espanso';
-import { WorkspaceService, SnippetService } from '@snippet-engine-control/app';
+import { ValidationService, SnippetService } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
 
 const store = new SnippetStore();
@@ -167,8 +167,8 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
         const all = store.getAll().filter(s => s.id !== draft.id);
         all.push(draft);
 
-        const workspaceService = new WorkspaceService({ readSnippets: () => [], readSnippetsFromEngine: () => [], writeSnippets: () => {} });
-        const diag = workspaceService.validateSnippets(all);
+        const validationService = new ValidationService();
+        const diag = validationService.validateSnippets(all);
 
         // Filter diagnostics to only show warnings/errors related to the draft
         // (For conflicts, we simply check if its triggers are involved)

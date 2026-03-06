@@ -10,7 +10,7 @@ export function validate(options: ValidateOptions | string = {}) {
   const workspaceService = new WorkspaceService({
     readSnippets,
     readSnippetsFromEngine: readSnippetsFromEspanso,
-    writeSnippets: () => {}
+    writeSnippets: () => { throw new Error("writeSnippets is not supported in this flow"); }
   });
 
   let result;

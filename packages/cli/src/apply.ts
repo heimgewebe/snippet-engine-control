@@ -1,20 +1,18 @@
 import { buildExportPlan } from './plan';
 import { writeSnippets } from '@snippet-engine-control/adapter-espanso';
-import { WorkspaceService } from '@snippet-engine-control/app';
+import { ApplyService } from '@snippet-engine-control/app';
 
 export function apply(options: { inputPath?: string; engine?: string; dir?: string; isDryRun?: boolean }) {
   const plan = buildExportPlan(options); // using existing builder for now
 
   const isDryRun = options.isDryRun !== false;
 
-  const workspaceService = new WorkspaceService({
-    readSnippets: () => [],
-    readSnippetsFromEngine: () => [],
+  const applyService = new ApplyService({
     writeSnippets
   });
 
   try {
-    const didWrite = workspaceService.applyPlan(plan, isDryRun);
+    const didWrite = applyService.applyPlan(plan, isDryRun);
     if (!didWrite) {
       console.log('Dry run: skipping write');
       console.log(JSON.stringify(plan, null, 2));
