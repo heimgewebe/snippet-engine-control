@@ -13,11 +13,11 @@
 
 ## 3. Daemon Serving Path
 - Handled in `packages/cli/src/daemon.ts` via `http.createServer`.
-- URL resolution relies on `path.resolve(__dirname, '../../../ui')` statically serving `req.url || 'index.html'`.
-- Token (`X-SEC-Token`) injected directly into `index.html`.
+- URL resolution specifically builds the target path using `const uiDir = path.resolve(__dirname, '../../../ui')` and serves static files using `path.join(uiDir, req.url === '/' ? 'index.html' : req.url || 'index.html')`.
+- Token injection works by generating an authentication token and replacing `</head>` in `index.html` with `<script>window.__SEC_TOKEN__ = "${SEC_TOKEN}";</script>\n</head>`. This token is then sent by the UI in the `X-SEC-Token` HTTP header on `/api/*` requests.
 
 ## 4. UI Asset Path
-- `packages/ui/app.js` and CSS are loaded by the browser from `/app.js` resolving natively via the static file handler checking extensions and setting `Content-Type`.
+- `packages/ui/app.js` and CSS are loaded by the browser directly from the root path (`/app.js`), mapping to the correct native files via the Daemon's `path.join` static serving logic, dynamically assigning `Content-Type` headers based on file extension.
 
 ## 5. CLI Build Output Path
 - Code built via `tsc -b`.

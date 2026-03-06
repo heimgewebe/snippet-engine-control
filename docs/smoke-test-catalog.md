@@ -15,13 +15,14 @@
 - **Expected:** Process prints "Dry run: skipping write" and the export plan JSON to stdout.
 
 ### ST04: CLI Apply (Actual Write)
-- **Command:** `node packages/cli/dist/src/index.js apply --yes`
-- **Expected:** Process successfully writes `sec.generated.yml` to the configured Espanso directory and prints "Successfully applied snippets."
+- **Condition:** Execution with valid mock snippets or a custom input path `--input` (if not relying on default OS detection), and an engine targeted.
+- **Command:** `SEC_SNIPPETS=<path/to/valid/mock> node packages/cli/dist/src/index.js apply --engine espanso --yes`
+- **Expected:** Process writes an updated `sec.generated.yml` to the specific `match` directory within the configured/target Espanso directory without error, bypassing dry-run logic.
 
 ### ST05: Daemon Launch & Token Injection
 - **Command:** `node packages/cli/dist/src/index.js ui`
 - **Expected:** Daemon binds to 127.0.0.1 (unless --allow-lan is supplied). Visiting the URL returns HTML that successfully embeds `window.__SEC_TOKEN__`.
 
 ### ST06: Adapter Resilience
-- **Condition:** Pass an invalid YAML file to `readSnippets`.
-- **Expected:** Process throws an explicit error indicating file path and parsing failure details, ensuring it fails closed.
+- **Condition:** Place an invalid YAML file in the engine's targeted `match` directory and run `readSnippetsFromEngine(dir)`.
+- **Expected:** The `yaml.parse` invocation explicitly fails and process throws an error indicating the file path and parsing failure details (`Failed to parse YAML in <path>`), ensuring fail-closed operations.
