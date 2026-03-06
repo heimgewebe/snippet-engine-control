@@ -7,8 +7,7 @@ test('WorkspaceService', async (t) => {
   await t.test('initializes and validates without errors on empty', () => {
     const service = new WorkspaceService({
       readSnippets: () => [],
-      readSnippetsFromEngine: () => [],
-      writeSnippets: () => { throw new Error('Not supposed to write during validate'); }
+      readSnippetsFromEngine: () => []
     });
 
     const result = service.validate({ inputPath: 'test' });
@@ -24,8 +23,7 @@ test('WorkspaceService', async (t) => {
         wasCalled = true;
         return [];
       },
-      readSnippetsFromEngine: () => { throw new Error('Should not be called'); },
-      writeSnippets: () => { throw new Error('Not supposed to write during validate'); }
+      readSnippetsFromEngine: () => { throw new Error('Should not be called'); }
     });
 
     service.validate({});
