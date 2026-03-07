@@ -434,7 +434,7 @@ Status: planned
 `stableId + revisionId`
 
 #### Aufgaben
-- [ ] Datenmodell erweitern
+- [x] Datenmodell erweitern
 - [ ] Store umbauen
 - [ ] Adapter-Import-Mapping
 - [ ] Tests
