@@ -13,7 +13,7 @@ During Phase 0, we established the "Product-Truth" by diagnosing the current sta
 - The UI DOM currently binds snippet manipulation (selection, loading, DOM element `data-id`s) heavily to `id`.
 
 ### Asset Paths
-- **Daemon Serving Path:** `packages/cli/src/daemon.ts` maps `req.url` relative to `path.resolve(__dirname, '../../../ui')` to serve `index.html` and other assets.
+- **Daemon Serving Path:** `packages/cli/src/daemon.ts` builds the target path using `const uiDir = path.resolve(__dirname, '../../../ui')` and serves static assets via `path.join(...)`, where `/` is specially mapped to `index.html`.
 - **UI Asset Path:** The UI runs at the root path (`/`) fetching `/app.js` and CSS directly from the daemon's static file handler.
 
 ### CLI and Build Outputs
@@ -23,7 +23,7 @@ During Phase 0, we established the "Product-Truth" by diagnosing the current sta
   1. `sec validate` (exits 0 if valid)
   2. `sec export` (returns the JSON export plan)
   3. `sec apply` (executes dry-run by default)
-  4. `sec apply --yes` (actually writes to the engine file)
+  4. `sec apply --yes` (actually writes to the targeted engine file, provided a valid engine and input context exist)
 
 ## Decision
 We confirm that the existing infrastructure handles packaging and the `validate -> dry-run -> apply` pipeline smoothly.
