@@ -4,3 +4,4 @@ export * from './services/snippet';
 export * from './services/validation';
 export * from './services/apply';
 export * from './model/workspace';
+export * from './model/store';

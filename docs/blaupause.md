@@ -437,7 +437,7 @@ Status: in progress
 
 #### Aufgaben
 - [x] Datenmodell erweitern (Typen in `app/model` eingeführt)
-- [ ] Store umbauen
+- [x] Store umbauen
 - [ ] Adapter-Import-Mapping
 - [ ] Tests
 
