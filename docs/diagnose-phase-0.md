@@ -45,7 +45,7 @@ node packages/cli/dist/src/index.js apply
 #   "unsupportedFeatures": []
 # }
 
-node packages/cli/dist/src/index.js apply --yes
-# Output:
+SEC_SNIPPETS=<path/to/valid/mock> node packages/cli/dist/src/index.js apply --engine espanso --yes
+# Output (when executed with valid engine/input context):
 # Successfully applied snippets.
 ```

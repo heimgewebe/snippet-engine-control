@@ -15,7 +15,7 @@
 - **Expected:** Process prints "Dry run: skipping write" and the export plan JSON to stdout.
 
 ### ST04: CLI Apply (Actual Write)
-- **Condition:** Execution with valid mock snippets or a custom input path `--input` (if not relying on default OS detection), and an engine targeted.
+- **Condition:** Execution with a valid engine target (`--engine espanso`) and a specific environment-based input path (`SEC_SNIPPETS`).
 - **Command:** `SEC_SNIPPETS=<path/to/valid/mock> node packages/cli/dist/src/index.js apply --engine espanso --yes`
 - **Expected:** Process writes an updated `sec.generated.yml` to the specific `match` directory within the configured/target Espanso directory without error, bypassing dry-run logic.
 
