@@ -1,7 +1,5 @@
 import { Snippet, Diagnostics } from '@snippet-engine-control/core';
 
-export type Diagnostic = string;
-
 // These types are placeholders as they are not yet fully defined in core.
 export interface ExportImpact {
   changedFiles: number;
@@ -55,6 +53,9 @@ export interface SnippetDocument {
   ir: Snippet;
   dirty: boolean;
   derived: {
+    // Diagnostics come from the core layer and represent the canonical
+    // structured diagnostic model. The workspace layer does not redefine
+    // a separate Diagnostic[] representation.
     diagnostics?: Diagnostics;
     preview?: PreviewResult;
     exportImpact?: ExportImpact;
