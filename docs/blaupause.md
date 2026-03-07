@@ -395,20 +395,20 @@ open → edit → validate → preview → dry-run → apply → verify
 ## Entwicklungsphasen: die optimale Reihenfolge
 
 ### Phase 0 — Diagnose & Product-Truth
-Status: planned
+Status: completed
 
 #### Ziel
 
 Keine stillen Annahmen.
 
 #### Aufgaben
-- [ ] grep/rg all uses of snippet.id
-- [ ] list all fingerprint producers
-- [ ] trace daemon serving path for /
-- [ ] trace UI asset path for app.js
-- [ ] verify CLI build output path
-- [ ] run one full flow: validate -> dry-run -> apply
-- [ ] document exact command lines and expected outputs
+- [x] grep/rg all uses of snippet.id
+- [x] list all fingerprint producers
+- [x] trace daemon serving path for /
+- [x] trace UI asset path for app.js
+- [x] verify CLI build output path
+- [x] run one full flow: validate -> dry-run -> apply
+- [x] document exact command lines and expected outputs
 
 #### Output
 
@@ -587,7 +587,7 @@ Mehr Komfort ohne neue Semantikdrift.
 
 ## Umsetzungsreihenfolge als PR-Kette
 
-- [ ] **PR 0** diagnose(product): map id-flow, apply-flow and packaging truth
+- [x] **PR 0** diagnose(product): map id-flow, apply-flow and packaging truth
 - [ ] **PR 1** refactor(app): introduce stableId/revisionId document model
 - [ ] **PR 2** feat(app): add canonical workspace model and session state
 - [ ] **PR 3** refactor(app): explicit saveDraft/buildPlan/applyPlan flow
