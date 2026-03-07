@@ -148,12 +148,14 @@ type SnippetDocument = {
   ir: Snippet
   dirty: boolean
   derived: {
-    diagnostics?: Diagnostic[]
+    diagnostics?: Diagnostics
     preview?: PreviewResult
     exportImpact?: ExportImpact
   }
 }
 ```
+
+> Diagnostics originate from the core layer and use the structured `Diagnostics` type defined in `@snippet-engine-control/core`. Earlier references to `Diagnostic[]` in this document represent a simplified conceptual form rather than a separate type definition.
 
 ---
 

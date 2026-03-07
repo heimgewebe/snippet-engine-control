@@ -1,3 +1,6 @@
+// Phase-1 workspace model.
+// This API surface may evolve while the workspace/store integration
+// is implemented in subsequent phases.
 import { Snippet, Diagnostics } from '@snippet-engine-control/core';
 
 // These types are placeholders as they are not yet fully defined in core.
