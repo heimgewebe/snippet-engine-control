@@ -427,14 +427,14 @@ Klarheit darüber:
 ---
 
 ### Phase 1 — Stabile Identität
-Status: planned
+Status: in progress
 
 #### Ziel
 
 `stableId + revisionId`
 
 #### Aufgaben
-- [x] Datenmodell erweitern
+- [x] Datenmodell erweitern (Typen in `app/model` eingeführt)
 - [ ] Store umbauen
 - [ ] Adapter-Import-Mapping
 - [ ] Tests
