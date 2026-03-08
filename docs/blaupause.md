@@ -493,17 +493,17 @@ Der Produktfluss ist ohne UI testbar.
 ---
 
 ### Phase 4 — Packaging + E2E
-Status: planned
+Status: completed
 
 #### Ziel
 
 Produktwahrheit belegen.
 
 #### Aufgaben
-- [ ] CLI-Build-Truth
-- [ ] Daemon/UI-Serving-Truth
-- [ ] E2E-Smoke
-- [ ] ein echter Produktpfad
+- [x] CLI-Build-Truth
+- [x] Daemon/UI-Serving-Truth
+- [x] E2E-Smoke
+- [x] ein echter Produktpfad
 
 #### Stop-Kriterium
 
@@ -596,7 +596,7 @@ Mehr Komfort ohne neue Semantikdrift.
 - [x] **PR 1** refactor(app): introduce stableId/revisionId document model
 - [x] **PR 2** feat(app): add canonical workspace model and session state
 - [x] **PR 3** refactor(app): explicit saveDraft/buildPlan/applyPlan flow
-- [ ] **PR 4** build(e2e): prove product flow end-to-end
+- [x] **PR 4** build(e2e): prove product flow end-to-end
 - [ ] **PR 5** feat(runtime): verification and minimal apply safety
 - [ ] **PR 6** feat(preview): layered preview pipeline
 - [ ] **PR 7** feat(history): workspace snapshots and undo/redo
