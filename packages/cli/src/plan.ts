@@ -1,55 +1,19 @@
 import * as fs from 'fs';
-import * as crypto from 'crypto';
 import * as path from 'path';
-import * as yaml from 'yaml';
-import { ExportPlan, ExportChange, Snippet } from '@snippet-engine-control/core';
+import { ExportPlan, Snippet } from '@snippet-engine-control/core';
+import { PlanService } from '@snippet-engine-control/app';
 import { readSnippets, discoverDirs } from '@snippet-engine-control/adapter-espanso';
 
-export function buildExportPlan(options: { engine?: string; dir?: string; inputPath?: string }): ExportPlan {
+export function buildExportPlan(options: { engine?: string; dir?: string; inputPath?: string }, sourceSnippets?: Snippet[]): ExportPlan {
   if (options.engine !== 'espanso') {
     return { changes: [], unsupportedFeatures: [] };
   }
 
-  if (!options.inputPath) {
-    console.error('Input path required for export/apply');
+  const snippets = sourceSnippets || (options.inputPath ? readSnippets(options.inputPath) : undefined);
+
+  if (!snippets) {
+    console.error('Input path or sourceSnippets required for export/apply');
     process.exit(2);
-  }
-
-  const sourceSnippets = readSnippets(options.inputPath);
-  const plan: ExportPlan = { changes: [], unsupportedFeatures: [] };
-
-  const matches: any[] = [];
-
-  for (const snippet of sourceSnippets) {
-    // Collect unsupported features
-    if (snippet.constraints && snippet.constraints.localeHints) {
-      plan.unsupportedFeatures!.push(`Snippet '${snippet.id}' uses unsupported feature: localeHints`);
-    }
-    if (snippet.tags && snippet.tags.length > 0) {
-      plan.unsupportedFeatures!.push(`Snippet '${snippet.id}' uses unsupported feature: tags`);
-    }
-
-    const match: any = { replace: snippet.body };
-
-    if (snippet.triggers.length === 1) {
-      match.trigger = snippet.triggers[0];
-    } else if (snippet.triggers.length > 1) {
-      match.triggers = snippet.triggers;
-    }
-
-    if (snippet.constraints) {
-      if (snippet.constraints.wordBoundary) {
-        match.word = true;
-      }
-      if (snippet.constraints.appInclude && snippet.constraints.appInclude.length > 0) {
-        match.app_include = snippet.constraints.appInclude;
-      }
-      if (snippet.constraints.appExclude && snippet.constraints.appExclude.length > 0) {
-        match.app_exclude = snippet.constraints.appExclude;
-      }
-    }
-
-    matches.push(match);
   }
 
   // Determine destination dir
@@ -65,30 +29,23 @@ export function buildExportPlan(options: { engine?: string; dir?: string; inputP
 
   const targetFile = path.resolve(targetDir, 'match', 'sec.generated.yml');
 
-  const content = yaml.stringify({ matches });
-  const afterHash = crypto.createHash('sha256').update(content).digest('hex');
-
-  let beforeHash: string | undefined;
-  let action: 'create' | 'update' | 'delete' = 'create';
+  let fileExists = false;
+  let existingContent: string | undefined = undefined;
 
   try {
     if (fs.existsSync(targetFile)) {
-      const existingContent = fs.readFileSync(targetFile, 'utf8');
-      beforeHash = crypto.createHash('sha256').update(existingContent).digest('hex');
-      action = 'update';
+      existingContent = fs.readFileSync(targetFile, 'utf8');
+      fileExists = true;
     }
   } catch (e) {
     // Ignore if file can't be read
   }
 
-  plan.changes.push({
-    file: targetFile,
-    action,
-    content,
-    beforeHash,
-    afterHash,
-    originPath: targetFile
+  const planService = new PlanService();
+  return planService.buildPlan(snippets, {
+    engine: options.engine,
+    targetFile,
+    fileExists,
+    existingContent
   });
-
-  return plan;
 }

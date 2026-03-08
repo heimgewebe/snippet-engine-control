@@ -3,6 +3,8 @@ export * from './services/workspace';
 export * from './services/snippet';
 export * from './services/validation';
 export * from './services/apply';
+export * from './services/draft';
+export * from './services/plan';
 
 // --- Phase-1 API Surface ---
 // The following models (workspace, store) are exposed temporarily as a root integration API
