@@ -117,7 +117,8 @@ test('Daemon Security - Token and Origin validation', async (t) => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'X-SEC-Token': token
+        'X-SEC-Token': token,
+        'Origin': `http://127.0.0.1:${port}`
       }
     }, JSON.stringify({ triggers: [':drun'], body: "dry run test" }));
     assert.equal(draftRes.statusCode, 200);
@@ -126,7 +127,8 @@ test('Daemon Security - Token and Origin validation', async (t) => {
     const exportRes = await request('/api/export/dry-run', {
       method: 'POST',
       headers: {
-        'X-SEC-Token': token
+        'X-SEC-Token': token,
+        'Origin': `http://127.0.0.1:${port}`
       }
     });
 

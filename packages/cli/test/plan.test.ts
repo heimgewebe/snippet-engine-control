@@ -12,7 +12,7 @@ test('buildExportPlan integration tests', async (t) => {
     assert.deepEqual(result, { changes: [], unsupportedFeatures: [] });
   });
 
-  await t.test('passes sourceSnippets without needing inputPath and no file exists', () => {
+  await t.test('passes sourceSnippets without needing inputPath and no file exists', (t) => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-cli-plan-test-'));
     t.after(() => {
       fs.rmSync(tempDir, { recursive: true, force: true });
@@ -31,7 +31,7 @@ test('buildExportPlan integration tests', async (t) => {
     assert.match(change.content!, /body1/);
   });
 
-  await t.test('detects existing file and passes existingContent', () => {
+  await t.test('detects existing file and passes existingContent', (t) => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-cli-plan-test-'));
     t.after(() => {
       fs.rmSync(tempDir, { recursive: true, force: true });
@@ -53,6 +53,7 @@ test('buildExportPlan integration tests', async (t) => {
 
     const change = result.changes[0];
     assert.equal(change.action, 'update'); // plan service changes to update when hashes differ
+    assert.ok(change.beforeHash, 'existingContent was not used'); // ensures existingContent was used
     assert.match(change.content!, /:new/);
     assert.match(change.content!, /new/);
     assert.doesNotMatch(change.content!, /:old/);
