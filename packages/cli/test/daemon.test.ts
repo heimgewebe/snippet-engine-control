@@ -110,4 +110,35 @@ test('Daemon Security - Token and Origin validation', async (t) => {
 
     assert.equal(res.statusCode, 404);
   });
+
+  await t.test('POST /api/export/dry-run builds plan with draft changes', async () => {
+    // 1. Insert draft
+    const draftRes = await request('/api/snippets/new-export-test', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SEC-Token': token
+      }
+    }, JSON.stringify({ triggers: [':drun'], body: "dry run test" }));
+    assert.equal(draftRes.statusCode, 200);
+
+    // 2. Call dry-run export
+    const exportRes = await request('/api/export/dry-run', {
+      method: 'POST',
+      headers: {
+        'X-SEC-Token': token
+      }
+    });
+
+    assert.equal(exportRes.statusCode, 200);
+
+    const plan = JSON.parse(exportRes.data);
+    assert.ok(plan.changes);
+    assert.equal(Array.isArray(plan.changes), true);
+
+    const hasDryRunChange = plan.changes.some((c: any) =>
+      c.content && c.content.includes(':drun') && c.content.includes('dry run test')
+    );
+    assert.equal(hasDryRunChange, true, 'Export plan should include the new draft content');
+  });
 });
