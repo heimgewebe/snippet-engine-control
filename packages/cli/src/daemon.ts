@@ -137,22 +137,35 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
     try {
       if (req.method === 'GET' && pathname === '/api/snippets') {
         res.writeHead(200);
-        res.end(JSON.stringify(store.getAll()));
+        // The UI currently expects a flat array of Snippet IRs
+        res.end(JSON.stringify(store.getAll().map(doc => doc.ir)));
       }
       else if (req.method === 'PUT' && pathname.startsWith('/api/snippets/')) {
         const parts = pathname.split('/');
-        const id = parts[parts.length - 1];
+        const legacyId = parts[parts.length - 1];
         const draft = JSON.parse(body) as Snippet;
 
-        // Ensure no missing IDs internally
-        const saved = store.put(draft, id);
+        // The UI still operates on IR ids, so we need to translate that to a stableId
+        const existingDoc = store.getAll().find(doc => doc.ir.id === legacyId);
+
+        // Update existing document if found, else insert new (since UI hasn't adopted stableId yet)
+        const savedDoc = store.put(draft, existingDoc?.stableId);
+
         res.writeHead(200);
-        res.end(JSON.stringify(saved));
+        // Return flat Snippet IR to the UI for backward compatibility
+        res.end(JSON.stringify(savedDoc.ir));
       }
       else if (req.method === 'DELETE' && pathname.startsWith('/api/snippets/')) {
         const parts = pathname.split('/');
-        const id = parts[parts.length - 1];
-        const deleted = store.delete(id);
+        const legacyId = parts[parts.length - 1];
+
+        // Find by legacy IR id
+        const existingDoc = store.getAll().find(doc => doc.ir.id === legacyId);
+        let deleted = false;
+        if (existingDoc) {
+          deleted = store.delete(existingDoc.stableId);
+        }
+
         res.writeHead(200);
         res.end(JSON.stringify({ success: deleted }));
       }

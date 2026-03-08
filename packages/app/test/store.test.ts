@@ -52,6 +52,11 @@ test('SnippetStore CRUD', () => {
 
   assert.equal(store.getAll().length, 2);
 
+  // Unknown oldStableId throws
+  assert.throws(() => {
+    store.put(updatedDraft, 'non-existent-id');
+  }, /Unknown stableId: non-existent-id/);
+
   // Delete
   assert.equal(store.delete(saved.stableId), true);
   assert.equal(store.getAll().length, 1);

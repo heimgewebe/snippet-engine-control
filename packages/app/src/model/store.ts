@@ -63,7 +63,11 @@ export class SnippetStore {
       id: revisionId
     };
 
-    if (oldStableId && this.map.has(oldStableId)) {
+    if (oldStableId) {
+      if (!this.map.has(oldStableId)) {
+        throw new Error(`Unknown stableId: ${oldStableId}`);
+      }
+
       // Update existing document
       const existing = this.map.get(oldStableId)!;
 
