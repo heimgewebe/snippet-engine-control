@@ -54,11 +54,10 @@ export class PlanService {
     const afterHash = crypto.createHash('sha256').update(content).digest('hex');
 
     let beforeHash: string | undefined;
-    let action: 'create' | 'update' | 'delete' = 'create';
+    let action: 'create' | 'update' | 'delete' = options.fileExists ? 'update' : 'create';
 
     if (options.fileExists && options.existingContent !== undefined) {
       beforeHash = crypto.createHash('sha256').update(options.existingContent).digest('hex');
-      action = 'update';
     }
 
     plan.changes.push({

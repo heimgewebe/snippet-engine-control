@@ -77,6 +77,31 @@ test('PlanService', async (t) => {
     assert.match(change.content!, /word: true/);
   });
 
+  await t.test('buildPlan with fileExists but no existingContent sets action to update without beforeHash', () => {
+    const service = new PlanService();
+    const snippets: Snippet[] = [
+      {
+        id: '3',
+        triggers: ['t3'],
+        body: 'b3'
+      }
+    ];
+
+    const result = service.buildPlan(snippets, {
+      engine: 'espanso',
+      targetFile: '/test/match.yml',
+      fileExists: true,
+      existingContent: undefined
+    });
+
+    assert.equal(result.changes.length, 1);
+    const change = result.changes[0];
+
+    assert.equal(change.action, 'update');
+    assert.equal(change.beforeHash, undefined);
+    assert.ok(change.afterHash);
+  });
+
   await t.test('buildPlan for non-espanso engine returns empty plan', () => {
     const service = new PlanService();
     const result = service.buildPlan([], {
