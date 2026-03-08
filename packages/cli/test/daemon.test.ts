@@ -85,4 +85,29 @@ test('Daemon Security - Token and Origin validation', async (t) => {
     assert.equal(res.statusCode, 200);
     assert.match(res.data, /"preview":"test-success"/);
   });
+
+  await t.test('PUT /api/snippets/new-123 creates a new snippet', async () => {
+    const res = await request('/api/snippets/new-123', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SEC-Token': token
+      }
+    }, JSON.stringify({ triggers: [':new'], body: "im new" }));
+
+    assert.equal(res.statusCode, 200);
+    assert.match(res.data, /"body":"im new"/);
+  });
+
+  await t.test('PUT /api/snippets/missing-id fails with 404', async () => {
+    const res = await request('/api/snippets/missing-id', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SEC-Token': token
+      }
+    }, JSON.stringify({ triggers: [':miss'], body: "miss" }));
+
+    assert.equal(res.statusCode, 404);
+  });
 });

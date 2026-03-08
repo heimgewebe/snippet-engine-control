@@ -148,6 +148,12 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
         // The UI still operates on IR ids, so we need to translate that to a stableId
         const existingDoc = store.getAll().find(doc => doc.ir.id === legacyId);
 
+        if (!existingDoc && !legacyId.startsWith('new-')) {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: `Not Found: Cannot update non-existent snippet '${legacyId}'` }));
+          return;
+        }
+
         // Update existing document if found, else insert new (since UI hasn't adopted stableId yet)
         const savedDoc = store.put(draft, existingDoc?.stableId);
 
