@@ -1,5 +1,4 @@
 export * from './model/snippet';
-export * from './model/store';
 export * from './model/engine';
 export * from './model/diagnostics';
 export * from './ir/normalize';

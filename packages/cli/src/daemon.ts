@@ -3,12 +3,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import * as os from 'os';
-import {
-  SnippetStore,
-  Snippet
-} from '@snippet-engine-control/core';
+import { Snippet } from '@snippet-engine-control/core';
 import { readSnippetsFromEspanso } from '@snippet-engine-control/adapter-espanso';
-import { ValidationService, SnippetService } from '@snippet-engine-control/app';
+import { ValidationService, SnippetService, SnippetStore } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
 
 const store = new SnippetStore();
@@ -140,22 +137,41 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
     try {
       if (req.method === 'GET' && pathname === '/api/snippets') {
         res.writeHead(200);
-        res.end(JSON.stringify(store.getAll()));
+        // The UI currently expects a flat array of Snippet IRs
+        res.end(JSON.stringify(store.getAll().map(doc => doc.ir)));
       }
       else if (req.method === 'PUT' && pathname.startsWith('/api/snippets/')) {
         const parts = pathname.split('/');
-        const id = parts[parts.length - 1];
+        const legacyId = parts[parts.length - 1];
         const draft = JSON.parse(body) as Snippet;
 
-        // Ensure no missing IDs internally
-        const saved = store.put(draft, id);
+        // The UI still operates on IR ids, so we need to translate that to a stableId
+        const existingDoc = store.getAll().find(doc => doc.ir.id === legacyId);
+
+        if (!existingDoc && !legacyId.startsWith('new-')) {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: `Not Found: Cannot update non-existent snippet '${legacyId}'` }));
+          return;
+        }
+
+        // Update existing document if found, else insert new (since UI hasn't adopted stableId yet)
+        const savedDoc = store.put(draft, existingDoc?.stableId);
+
         res.writeHead(200);
-        res.end(JSON.stringify(saved));
+        // Return flat Snippet IR to the UI for backward compatibility
+        res.end(JSON.stringify(savedDoc.ir));
       }
       else if (req.method === 'DELETE' && pathname.startsWith('/api/snippets/')) {
         const parts = pathname.split('/');
-        const id = parts[parts.length - 1];
-        const deleted = store.delete(id);
+        const legacyId = parts[parts.length - 1];
+
+        // Find by legacy IR id
+        const existingDoc = store.getAll().find(doc => doc.ir.id === legacyId);
+        let deleted = false;
+        if (existingDoc) {
+          deleted = store.delete(existingDoc.stableId);
+        }
+
         res.writeHead(200);
         res.end(JSON.stringify({ success: deleted }));
       }
@@ -164,7 +180,7 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
 
         // Provide the draft as part of the total snippets to validate
         // but replace its old version if it exists
-        const all = store.getAll().filter(s => s.id !== draft.id);
+        const all = store.getAll().map(doc => doc.ir).filter(s => s.id !== draft.id);
         all.push(draft);
 
         const validationService = new ValidationService();
@@ -196,7 +212,7 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
         try {
           tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-daemon-'));
           const tmpPath = path.join(tmpDir, 'sec.generated.tmp.json');
-          fs.writeFileSync(tmpPath, JSON.stringify(store.getAll()), { mode: 0o600 });
+          fs.writeFileSync(tmpPath, JSON.stringify(store.getAll().map(doc => doc.ir)), { mode: 0o600 });
 
           // Pass the explicit dir to buildExportPlan to prevent failure if auto-discovery fails
           const plan = buildExportPlan({ engine: 'espanso', inputPath: tmpPath, dir: options.dir || path.join(process.cwd(), '.espanso') });
