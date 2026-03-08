@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc -b -v",
     "test": "npm run test --workspaces --if-present && npm run test:e2e",
-    "test:e2e": "node --test --experimental-strip-types test-e2e/*.test.ts",
+    "test:e2e": "node --test test-e2e/*.test.js",
     "typecheck": "tsc -b -v"
   },
   "devDependencies": {
