@@ -464,6 +464,9 @@ Kanonischer `Workspace`
 
 Die App kann mehrere Dokumente logisch verwalten.
 
+#### Abnahmehinweis
+Kanonische `Workspace`-Typen eingeführt. `WorkspaceService` verwaltet nun den kanonischen Zustand als Session-Grundlage. CLI-Daemon nutzt den Service statt direkter Store-Zugriffe. Tests für State Transitions (open/select/add/update/delete) sind grün.
+
 ---
 
 ### Phase 3 — Produktfluss
