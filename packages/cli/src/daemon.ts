@@ -2,7 +2,6 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import * as os from 'os';
 import { Snippet } from '@snippet-engine-control/core';
 import { readSnippetsFromEspanso } from '@snippet-engine-control/adapter-espanso';
 import { ValidationService, SnippetService, SnippetStore, DraftService } from '@snippet-engine-control/app';

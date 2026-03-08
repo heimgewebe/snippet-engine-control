@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@snippet-engine-control/core": "*"
+    "@snippet-engine-control/core": "*",
+    "yaml": "^2.3.4"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
