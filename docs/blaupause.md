@@ -448,17 +448,17 @@ Dokumentidentität bleibt im Editor stabil.
 ---
 
 ### Phase 2 — Workspace-Modell
-Status: planned
+Status: completed
 
 #### Ziel
 
 Kanonischer `Workspace`
 
 #### Aufgaben
-- [ ] Workspace-Typen
-- [ ] aktives Dokument
-- [ ] Dirty-/Derived-State
-- [ ] Session-Grundlage
+- [x] Workspace-Typen
+- [x] aktives Dokument
+- [x] Dirty-/Derived-State
+- [x] Session-Grundlage
 
 #### Stop-Kriterium
 
@@ -591,7 +591,7 @@ Mehr Komfort ohne neue Semantikdrift.
 
 - [x] **PR 0** diagnose(product): map id-flow, apply-flow and packaging truth
 - [ ] **PR 1** refactor(app): introduce stableId/revisionId document model
-- [ ] **PR 2** feat(app): add canonical workspace model and session state
+- [x] **PR 2** feat(app): add canonical workspace model and session state
 - [ ] **PR 3** refactor(app): explicit saveDraft/buildPlan/applyPlan flow
 - [ ] **PR 4** build(e2e): prove product flow end-to-end
 - [ ] **PR 5** feat(runtime): verification and minimal apply safety
