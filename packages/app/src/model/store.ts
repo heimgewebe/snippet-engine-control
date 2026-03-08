@@ -19,10 +19,16 @@ export class SnippetStore {
       const stableId = crypto.randomUUID();
       const revisionId = fingerprint(snippet).substring(0, 12);
 
+      // Normalize ir.id to match revisionId so load() and put() maintain the same invariant
+      const normalizedSnippet: Snippet = {
+        ...snippet,
+        id: revisionId
+      };
+
       const doc: SnippetDocument = {
         stableId,
         revisionId,
-        ir: snippet,
+        ir: normalizedSnippet,
         dirty: false,
         derived: {}
       };
@@ -48,7 +54,7 @@ export class SnippetStore {
   /**
    * Upserts a snippet into the store.
    * If oldStableId is provided, updates the existing document.
-   * If the content changes, updates revisionId and sets dirty = true.
+   * Unconditionally updates revisionId based on content, sets dirty = true, and fully clears derived state.
    *
    * @param snippet - The snippet IR to update/insert.
    * @param oldStableId - Optional stableId if editing an existing snippet.
@@ -77,11 +83,7 @@ export class SnippetStore {
         ir: updatedSnippet,
         dirty: true, // mark as dirty since it was updated
         // clear derived state that might be outdated
-        derived: {
-          ...existing.derived,
-          diagnostics: undefined,
-          preview: undefined
-        }
+        derived: {}
       };
 
       this.map.set(oldStableId, updatedDoc);

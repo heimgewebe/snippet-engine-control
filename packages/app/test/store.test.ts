@@ -22,6 +22,18 @@ test('SnippetStore CRUD', () => {
   assert.equal(doc.dirty, false);
   assert.ok(doc.stableId);
   assert.ok(doc.revisionId);
+  assert.equal(doc.ir.id, doc.revisionId, 'Load should normalize ir.id to revisionId');
+
+  // Give existing doc some derived state to prove it gets cleared on put
+  doc.derived = {
+    diagnostics: {
+      triggerCollisions: [],
+      ambiguousBoundaries: [],
+      encodingIssues: [],
+      unsupportedFeatures: []
+    },
+    exportImpact: { addedSnippets: 1, removedSnippets: 0, changedFiles: 1 }
+  };
 
   // Put (update via edit)
   const updatedDraft: Omit<Snippet, 'id'> = {
@@ -36,6 +48,8 @@ test('SnippetStore CRUD', () => {
   assert.notEqual(saved.revisionId, doc.revisionId, 'Revision ID should change due to new content');
   assert.equal(saved.ir.body, 'Updated body');
   assert.equal(saved.dirty, true, 'Updating should mark it as dirty');
+  assert.equal(saved.ir.id, saved.revisionId, 'Put should normalize ir.id to revisionId');
+  assert.deepEqual(saved.derived, {}, 'Updating should fully clear derived state');
 
   // Verify retrieval
   assert.equal(store.get(doc.stableId)?.ir.body, 'Updated body');
