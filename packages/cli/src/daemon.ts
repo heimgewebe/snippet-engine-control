@@ -2,10 +2,9 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import * as os from 'os';
 import { Snippet } from '@snippet-engine-control/core';
 import { readSnippetsFromEspanso } from '@snippet-engine-control/adapter-espanso';
-import { ValidationService, SnippetService, SnippetStore } from '@snippet-engine-control/app';
+import { ValidationService, SnippetService, SnippetStore, DraftService } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
 
 const store = new SnippetStore();
@@ -155,7 +154,8 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
         }
 
         // Update existing document if found, else insert new (since UI hasn't adopted stableId yet)
-        const savedDoc = store.put(draft, existingDoc?.stableId);
+        const draftService = new DraftService(store);
+        const savedDoc = draftService.saveDraft(draft, existingDoc?.stableId);
 
         res.writeHead(200);
         // Return flat Snippet IR to the UI for backward compatibility
@@ -207,22 +207,18 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
         res.end(JSON.stringify({ preview }));
       }
       else if (req.method === 'POST' && pathname === '/api/export/dry-run') {
-        // Write the store to a safe temp file to leverage existing buildExportPlan logic natively.
-        let tmpDir: string | undefined;
         try {
-          tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-daemon-'));
-          const tmpPath = path.join(tmpDir, 'sec.generated.tmp.json');
-          fs.writeFileSync(tmpPath, JSON.stringify(store.getAll().map(doc => doc.ir)), { mode: 0o600 });
-
-          // Pass the explicit dir to buildExportPlan to prevent failure if auto-discovery fails
-          const plan = buildExportPlan({ engine: 'espanso', inputPath: tmpPath, dir: options.dir || path.join(process.cwd(), '.espanso') });
+          const snippets = store.getAll().map(doc => doc.ir);
+          const plan = buildExportPlan(
+            { engine: 'espanso', dir: options.dir || path.join(process.cwd(), '.espanso') },
+            snippets
+          );
 
           res.writeHead(200);
           res.end(JSON.stringify(plan));
-        } finally {
-          if (tmpDir && fs.existsSync(tmpDir)) {
-            fs.rmSync(tmpDir, { recursive: true, force: true });
-          }
+        } catch (e: any) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: e.message }));
         }
       }
       else {

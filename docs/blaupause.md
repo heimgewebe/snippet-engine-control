@@ -429,7 +429,7 @@ Klarheit darüber:
 ---
 
 ### Phase 1 — Stabile Identität
-Status: in progress
+Status: completed
 
 #### Ziel
 
@@ -438,8 +438,8 @@ Status: in progress
 #### Aufgaben
 - [x] Datenmodell erweitern (Typen in `app/model` eingeführt)
 - [x] Store umbauen
-- [ ] Adapter-Import-Mapping
-- [ ] Tests
+- [x] Adapter-Import-Mapping
+- [x] Tests
 
 #### Stop-Kriterium
 
@@ -470,7 +470,7 @@ Kanonische `Workspace`-Typen eingeführt. `WorkspaceService` verwaltet nun den k
 ---
 
 ### Phase 3 — Produktfluss
-Status: planned
+Status: completed
 
 #### Ziel
 
@@ -481,10 +481,10 @@ saveDraft → buildPlan → applyPlan
 ```
 
 #### Aufgaben
-- [ ] DraftService
-- [ ] PlanService
-- [ ] Apply-Orchestrierung
-- [ ] UI/CLI daran anschließen
+- [x] DraftService
+- [x] PlanService
+- [x] Apply-Orchestrierung
+- [x] UI/CLI daran anschließen
 
 #### Stop-Kriterium
 
@@ -593,9 +593,9 @@ Mehr Komfort ohne neue Semantikdrift.
 ## Umsetzungsreihenfolge als PR-Kette
 
 - [x] **PR 0** diagnose(product): map id-flow, apply-flow and packaging truth
-- [ ] **PR 1** refactor(app): introduce stableId/revisionId document model
+- [x] **PR 1** refactor(app): introduce stableId/revisionId document model
 - [x] **PR 2** feat(app): add canonical workspace model and session state
-- [ ] **PR 3** refactor(app): explicit saveDraft/buildPlan/applyPlan flow
+- [x] **PR 3** refactor(app): explicit saveDraft/buildPlan/applyPlan flow
 - [ ] **PR 4** build(e2e): prove product flow end-to-end
 - [ ] **PR 5** feat(runtime): verification and minimal apply safety
 - [ ] **PR 6** feat(preview): layered preview pipeline
