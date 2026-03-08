@@ -593,7 +593,7 @@ Mehr Komfort ohne neue Semantikdrift.
 ## Umsetzungsreihenfolge als PR-Kette
 
 - [x] **PR 0** diagnose(product): map id-flow, apply-flow and packaging truth
-- [ ] **PR 1** refactor(app): introduce stableId/revisionId document model
+- [x] **PR 1** refactor(app): introduce stableId/revisionId document model
 - [x] **PR 2** feat(app): add canonical workspace model and session state
 - [x] **PR 3** refactor(app): explicit saveDraft/buildPlan/applyPlan flow
 - [ ] **PR 4** build(e2e): prove product flow end-to-end
