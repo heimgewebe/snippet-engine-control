@@ -1,4 +1,4 @@
-import { ExportPlan, VerificationResult } from '@snippet-engine-control/core';
+import { ExportPlan } from '@snippet-engine-control/core';
 import { EngineWritePort, EngineRuntimePort, EngineSnapshotPort } from '../ports/engine';
 
 export interface ApplyServiceOptions {
@@ -8,12 +8,7 @@ export interface ApplyServiceOptions {
 }
 
 export class ApplyService {
-  constructor(private options: ApplyServiceOptions) {
-    // Backwards compatibility for single-argument initialization
-    if (arguments.length === 1 && !('writePort' in options)) {
-      this.options = { writePort: options as any as EngineWritePort };
-    }
-  }
+  constructor(private options: ApplyServiceOptions) {}
 
   public applyPlan(plan: ExportPlan, isDryRun: boolean = true): boolean {
     if (plan.unsupportedFeatures && plan.unsupportedFeatures.length > 0) {
