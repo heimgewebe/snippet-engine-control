@@ -9,16 +9,18 @@ export function createSnapshot(targetDir?: string): string {
   }
 
   const matchDir = path.join(dirs[0], 'match');
-  if (!fs.existsSync(matchDir)) {
-    fs.mkdirSync(matchDir, { recursive: true });
+  const snapshotDir = path.join(dirs[0], '.sec-snapshots');
+
+  if (!fs.existsSync(snapshotDir)) {
+    fs.mkdirSync(snapshotDir, { recursive: true });
     if (process.platform !== 'win32') {
-      fs.chmodSync(matchDir, 0o700);
+      fs.chmodSync(snapshotDir, 0o700);
     }
   }
 
   const targetFile = path.join(matchDir, 'sec.generated.yml');
   const timestamp = Date.now().toString();
-  const snapshotFile = path.join(matchDir, `sec.generated.snapshot.${timestamp}.yml`);
+  const snapshotFile = path.join(snapshotDir, `sec.generated.snapshot.${timestamp}.yml`);
 
   if (fs.existsSync(targetFile)) {
     fs.copyFileSync(targetFile, snapshotFile);
@@ -67,12 +69,12 @@ export function rollbackLatestSnapshot(targetDir?: string): boolean {
     throw new Error('Cannot rollback: target directory not found.');
   }
 
-  const matchDir = path.join(dirs[0], 'match');
-  if (!fs.existsSync(matchDir)) {
+  const snapshotDir = path.join(dirs[0], '.sec-snapshots');
+  if (!fs.existsSync(snapshotDir)) {
     return false;
   }
 
-  const files = fs.readdirSync(matchDir);
+  const files = fs.readdirSync(snapshotDir);
   const snapshots = files
     .filter(f => f.startsWith('sec.generated.snapshot.') && f.endsWith('.yml'))
     .sort()
@@ -82,7 +84,7 @@ export function rollbackLatestSnapshot(targetDir?: string): boolean {
     return false;
   }
 
-  const latestSnapshot = path.join(matchDir, snapshots[0]);
+  const latestSnapshot = path.join(snapshotDir, snapshots[0]);
   restoreSnapshot(latestSnapshot, targetDir);
   return true;
 }
