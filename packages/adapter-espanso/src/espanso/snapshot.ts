@@ -53,6 +53,14 @@ export function restoreSnapshot(snapshotId: string, targetDir?: string): void {
   }
 }
 
+/**
+ * Rolls back the configuration to the most recent snapshot.
+ *
+ * Note (MVP): This currently resolves the "latest" snapshot purely by
+ * lexically sorting the snapshot files (which include a timestamp).
+ * There is currently no strict metadata binding tracking which snapshot
+ * corresponds to a specific Apply ID.
+ */
 export function rollbackLatestSnapshot(targetDir?: string): boolean {
   const dirs = targetDir ? [targetDir] : discoverDirs();
   if (dirs.length === 0) {

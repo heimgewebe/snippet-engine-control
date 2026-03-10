@@ -522,10 +522,14 @@ Apply vertrauenswürdig machen.
 - [x] post-apply verification (baseline present, structural verification missing)
 - [ ] runtime health (currently only MVP stub)
 - [x] pre-apply snapshot
-- [x] rollback latest apply
+- [x] rollback via latest pre-apply snapshot (MVP)
 
 #### Abnahmehinweis
-Minimal safety path eingeführt: pre-apply snapshot, rollback on write/verify failure, baseline verification, explicit CLI rollback. Runtime health remains provisional.
+Minimal safety path eingeführt: pre-apply snapshot, rollback on write/verify failure, baseline verification, explicit CLI rollback.
+Hinweis zur aktuellen MVP-Tiefe:
+- Rollback ist rein dateibasiert (neuester Snapshot) ohne feste Bindung an Apply-Metadaten.
+- Post-apply verification ist baseline/parsing-orientiert, nicht strukturell vertiefend.
+- Runtime health bleibt provisional/stub.
 
 #### Stop-Kriterium
 
