@@ -512,17 +512,17 @@ Das Produkt läuft reproduzierbar, nicht nur seine Pakete.
 ---
 
 ### Phase 5 — Verification + Minimal Safety
-Status: planned
+Status: completed
 
 #### Ziel
 
 Apply vertrauenswürdig machen.
 
 #### Aufgaben
-- [ ] post-apply verification
-- [ ] runtime health
-- [ ] pre-apply snapshot
-- [ ] rollback latest apply
+- [x] post-apply verification
+- [x] runtime health
+- [x] pre-apply snapshot
+- [x] rollback latest apply
 
 #### Stop-Kriterium
 
@@ -597,7 +597,7 @@ Mehr Komfort ohne neue Semantikdrift.
 - [x] **PR 2** feat(app): add canonical workspace model and session state
 - [x] **PR 3** refactor(app): explicit saveDraft/buildPlan/applyPlan flow
 - [x] **PR 4** build(e2e): prove product flow end-to-end
-- [ ] **PR 5** feat(runtime): verification and minimal apply safety
+- [x] **PR 5** feat(runtime): verification and minimal apply safety
 - [ ] **PR 6** feat(preview): layered preview pipeline
 - [ ] **PR 7** feat(history): workspace snapshots and undo/redo
 - [ ] **PR 8+** feat(ui): workbench comfort and navigation

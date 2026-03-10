@@ -145,3 +145,32 @@ test('E2E: ST06 - Adapter Resilience', (t) => {
         readSnippetsFromEspanso(tempEngineDir);
     }, /Failed to parse YAML in/);
 });
+
+test('E2E: ST07 - CLI Rollback (Snapshot restore)', (t) => {
+    const tempEngineDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-e2e-rb-'));
+    t.after(() => fs.rmSync(tempEngineDir, { recursive: true, force: true }));
+
+    const matchDir = path.join(tempEngineDir, 'match');
+    fs.mkdirSync(matchDir);
+    const targetFile = path.join(matchDir, 'sec.generated.yml');
+
+    // Manually create initial state
+    fs.writeFileSync(targetFile, 'initial state');
+
+    // Run apply with different snippets (empty)
+    const emptyFixturePath = path.join(FIXTURES_DIR, 'snippets.conflict.json'); // Any different fixture will do
+    execSync(`node ${CLI_PATH} apply --engine espanso --yes --dir ${tempEngineDir}`, {
+        encoding: 'utf-8',
+        env: { ...process.env, SEC_SNIPPETS: emptyFixturePath }
+    });
+
+    const changedContent = fs.readFileSync(targetFile, 'utf-8');
+    assert.notEqual(changedContent, 'initial state');
+
+    // Rollback
+    const rollbackOutput = execSync(`node ${CLI_PATH} rollback --dir ${tempEngineDir}`, { encoding: 'utf-8' });
+    assert.match(rollbackOutput, /Successfully rolled back/);
+
+    const rolledBackContent = fs.readFileSync(targetFile, 'utf-8');
+    assert.equal(rolledBackContent, 'initial state', 'Rollback should restore the initial state');
+});

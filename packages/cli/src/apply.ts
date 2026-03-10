@@ -1,5 +1,5 @@
 import { buildExportPlan } from './plan';
-import { writeSnippets } from '@snippet-engine-control/adapter-espanso';
+import { writeSnippets, createSnapshot, restoreSnapshot, rollbackLatestSnapshot, verify, health } from '@snippet-engine-control/adapter-espanso';
 import { ApplyService } from '@snippet-engine-control/app';
 
 export function apply(options: { inputPath?: string; engine?: string; dir?: string; isDryRun?: boolean }) {
@@ -8,7 +8,16 @@ export function apply(options: { inputPath?: string; engine?: string; dir?: stri
   const isDryRun = options.isDryRun !== false;
 
   const applyService = new ApplyService({
-    writeSnippets
+    writePort: { writeSnippets },
+    snapshotPort: {
+      createSnapshot: () => createSnapshot(options.dir),
+      restoreSnapshot: (id: string) => restoreSnapshot(id, options.dir),
+      rollbackLatestSnapshot: () => rollbackLatestSnapshot(options.dir)
+    },
+    runtimePort: {
+      verify: (p) => verify(p, options.dir),
+      health: () => health()
+    }
   });
 
   try {
