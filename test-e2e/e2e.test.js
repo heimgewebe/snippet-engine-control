@@ -157,11 +157,11 @@ test('E2E: ST07 - CLI Rollback (Snapshot restore)', (t) => {
     // Manually create initial state
     fs.writeFileSync(targetFile, 'initial state');
 
-    // Run apply with different snippets (empty)
-    const emptyFixturePath = path.join(FIXTURES_DIR, 'snippets.conflict.json'); // Any different fixture will do
+    // Run apply with a valid fixture to simulate a successful state change
+    const rollbackFixturePath = path.join(FIXTURES_DIR, 'snippets.rollback.json');
     execSync(`node ${CLI_PATH} apply --engine espanso --yes --dir ${tempEngineDir}`, {
         encoding: 'utf-8',
-        env: { ...process.env, SEC_SNIPPETS: emptyFixturePath }
+        env: { ...process.env, SEC_SNIPPETS: rollbackFixturePath }
     });
 
     const changedContent = fs.readFileSync(targetFile, 'utf-8');
