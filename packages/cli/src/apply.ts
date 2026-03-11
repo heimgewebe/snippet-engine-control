@@ -16,7 +16,7 @@ export function apply(options: { inputPath?: string; engine?: string; dir?: stri
     },
     runtimePort: {
       verify: (p) => verify(p, options.dir),
-      health: () => health()
+      health: () => health(options.dir)
     }
   });
 

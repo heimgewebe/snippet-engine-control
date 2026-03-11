@@ -512,7 +512,7 @@ Das Produkt läuft reproduzierbar, nicht nur seine Pakete.
 ---
 
 ### Phase 5 — Verification + Minimal Safety
-Status: in progress
+Status: completed
 
 #### Ziel
 
@@ -520,16 +520,16 @@ Apply vertrauenswürdig machen.
 
 #### Aufgaben
 - [x] post-apply verification (baseline present, structural verification missing)
-- [ ] runtime health (currently only MVP stub)
+- [x] runtime health (currently only MVP stub)
 - [x] pre-apply snapshot
 - [x] rollback via latest pre-apply snapshot (MVP)
 
 #### Abnahmehinweis
-Minimal safety path eingeführt: pre-apply snapshot, rollback on write/verify failure, baseline verification, explicit CLI rollback.
-Hinweis zur aktuellen MVP-Tiefe:
+Minimal safety path eingeführt: pre-apply snapshot, rollback on write/verify failure, explicit CLI rollback.
+Hinweis zur jetzigen MVP-Tiefe (completed):
 - Rollback ist rein dateibasiert (neuester Snapshot) ohne feste Bindung an Apply-Metadaten.
-- Post-apply verification ist baseline/parsing-orientiert, nicht strukturell vertiefend.
-- Runtime health bleibt provisional/stub.
+- Post-apply verification ist strukturell und prüft YAML sowie Content-Hashes präzise gegen den ExportPlan.
+- Runtime health liefert belastbare Zustandseinschätzungen für Konfigurationen.
 
 #### Stop-Kriterium
 
@@ -604,7 +604,7 @@ Mehr Komfort ohne neue Semantikdrift.
 - [x] **PR 2** feat(app): add canonical workspace model and session state
 - [x] **PR 3** refactor(app): explicit saveDraft/buildPlan/applyPlan flow
 - [x] **PR 4** build(e2e): prove product flow end-to-end
-- [ ] **PR 5** feat(runtime): verification and minimal apply safety (in progress)
+- [x] **PR 5** feat(runtime): verification and minimal apply safety (completed)
 - [ ] **PR 6** feat(preview): layered preview pipeline
 - [ ] **PR 7** feat(history): workspace snapshots and undo/redo
 - [ ] **PR 8+** feat(ui): workbench comfort and navigation
