@@ -18,6 +18,30 @@ test('Espanso Runtime - health()', async (t) => {
     assert.match(result.message!, /Config directory does not exist/);
   });
 
+  await t.test('returns error when config path exists but is a file', (t) => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-health-test-1.5-'));
+    t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
+    const configFile = path.join(tmpDir, 'config');
+    fs.writeFileSync(configFile, 'dummy content', 'utf8');
+
+    const result = health(configFile);
+    assert.strictEqual(result.status, 'error');
+    assert.match(result.message!, /Config path is not a directory/);
+  });
+
+  await t.test('returns error when match/ path exists but is a file', (t) => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-health-test-2.5-'));
+    t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
+    const matchFile = path.join(tmpDir, 'match');
+    fs.writeFileSync(matchFile, 'dummy content', 'utf8');
+
+    const result = health(tmpDir);
+    assert.strictEqual(result.status, 'error');
+    assert.match(result.message!, /match\/ path is not a directory/);
+  });
+
   await t.test('returns degraded when match dir is missing', (t) => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-health-test-2-'));
     t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));

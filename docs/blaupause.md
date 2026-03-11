@@ -529,7 +529,7 @@ Minimal safety path eingeführt: pre-apply snapshot, rollback on write/verify fa
 Hinweis zur jetzigen MVP-Tiefe (completed):
 - Rollback ist rein dateibasiert (neuester Snapshot) ohne feste Bindung an Apply-Metadaten.
 - Post-apply verification ist strukturell und prüft YAML sowie Content-Hashes präzise gegen den ExportPlan.
-- Runtime health liefert belastbare Zustandseinschätzungen für Konfigurationen.
+- Runtime health prüft grundlegende Konfigurationsdiagnostik (Existenz, Verzeichnisstruktur, Lesbarkeit).
 
 #### Stop-Kriterium
 
