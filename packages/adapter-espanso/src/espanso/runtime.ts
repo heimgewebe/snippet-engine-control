@@ -31,7 +31,9 @@ export function verify(plan: ExportPlan): VerificationResult {
         errors.push(`Invalid YAML in file ${change.file}: ${err.message}`);
       }
 
-      if (change.afterHash) {
+      if (!change.afterHash) {
+        errors.push(`Missing afterHash for verified ${change.action} change: ${change.file}`);
+      } else {
         const currentHash = crypto.createHash('sha256').update(content).digest('hex');
         if (currentHash !== change.afterHash) {
           errors.push(`Content hash mismatch for ${change.file}. Expected ${change.afterHash}, got ${currentHash}`);

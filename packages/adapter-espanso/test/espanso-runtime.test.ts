@@ -67,7 +67,6 @@ test('Espanso Runtime - verify()', async (t) => {
 
     const result = verify(plan);
     assert.strictEqual(result.ok, false);
-    assert.strictEqual(result.errors.length, 1);
     assert.match(result.errors[0], /Invalid YAML in file/);
   });
 
@@ -89,6 +88,25 @@ test('Espanso Runtime - verify()', async (t) => {
     assert.strictEqual(result.ok, false);
     assert.strictEqual(result.errors.length, 1);
     assert.match(result.errors[0], /Content hash mismatch/);
+  });
+
+  await t.test('fails when afterHash is missing for create/update', (t) => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-verify-test-3.5-'));
+    t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
+    const validYamlFile = path.join(tmpDir, 'valid.yml');
+    const content = 'matches:\n  - trigger: test\n    replace: test\n';
+    fs.writeFileSync(validYamlFile, content, 'utf8');
+
+    const plan: ExportPlan = {
+      // afterHash explicitly missing
+      changes: [{ action: 'update', file: validYamlFile }]
+    };
+
+    const result = verify(plan);
+    assert.strictEqual(result.ok, false);
+    assert.strictEqual(result.errors.length, 1);
+    assert.match(result.errors[0], /Missing afterHash for verified update change/);
   });
 
   await t.test('succeeds on correct content hash', (t) => {
