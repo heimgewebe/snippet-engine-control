@@ -1,5 +1,4 @@
 import { ExportPlan, VerificationResult, RuntimeHealth } from '@snippet-engine-control/core';
-import { readSnippetsFromEspanso } from './read';
 import { discoverDirs } from './discover';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -65,6 +64,10 @@ export function health(targetDir?: string): RuntimeHealth {
       return { status: 'error', message: `Config directory does not exist: ${configDir}` };
     }
 
+    if (!fs.statSync(configDir).isDirectory()) {
+      return { status: 'error', message: `Config path is not a directory: ${configDir}` };
+    }
+
     let isReadable = false;
     try {
       fs.accessSync(configDir, fs.constants.R_OK);
@@ -80,6 +83,10 @@ export function health(targetDir?: string): RuntimeHealth {
     const matchDir = path.join(configDir, 'match');
     if (!fs.existsSync(matchDir)) {
       return { status: 'degraded', message: `match/ directory is missing in ${configDir}` };
+    }
+
+    if (!fs.statSync(matchDir).isDirectory()) {
+      return { status: 'error', message: `match/ path is not a directory: ${matchDir}` };
     }
 
     let isMatchReadable = false;
