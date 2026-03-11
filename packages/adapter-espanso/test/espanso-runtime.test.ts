@@ -48,7 +48,7 @@ test('Espanso Runtime - verify()', async (t) => {
       changes: [{ action: 'create', file: path.join(tmpDir, 'missing.yml') }]
     };
 
-    const result = verify(plan, tmpDir);
+    const result = verify(plan);
     assert.strictEqual(result.ok, false);
     assert.strictEqual(result.errors.length, 1);
     assert.match(result.errors[0], /File missing after apply/);
@@ -65,7 +65,7 @@ test('Espanso Runtime - verify()', async (t) => {
       changes: [{ action: 'update', file: invalidYamlFile }]
     };
 
-    const result = verify(plan, tmpDir);
+    const result = verify(plan);
     assert.strictEqual(result.ok, false);
     assert.strictEqual(result.errors.length, 1);
     assert.match(result.errors[0], /Invalid YAML in file/);
@@ -85,7 +85,7 @@ test('Espanso Runtime - verify()', async (t) => {
       changes: [{ action: 'update', file: validYamlFile, afterHash: wrongHash }]
     };
 
-    const result = verify(plan, tmpDir);
+    const result = verify(plan);
     assert.strictEqual(result.ok, false);
     assert.strictEqual(result.errors.length, 1);
     assert.match(result.errors[0], /Content hash mismatch/);
@@ -105,7 +105,7 @@ test('Espanso Runtime - verify()', async (t) => {
       changes: [{ action: 'update', file: validYamlFile, afterHash: correctHash }]
     };
 
-    const result = verify(plan, tmpDir);
+    const result = verify(plan);
     assert.strictEqual(result.ok, true);
     assert.strictEqual(result.errors.length, 0);
   });
@@ -121,7 +121,7 @@ test('Espanso Runtime - verify()', async (t) => {
       changes: [{ action: 'delete', file: deletedFile }]
     };
 
-    const result = verify(plan, tmpDir);
+    const result = verify(plan);
     assert.strictEqual(result.ok, false);
     assert.strictEqual(result.errors.length, 1);
     assert.match(result.errors[0], /File was not deleted/);
@@ -137,7 +137,7 @@ test('Espanso Runtime - verify()', async (t) => {
       changes: [{ action: 'delete', file: deletedFile }]
     };
 
-    const result = verify(plan, tmpDir);
+    const result = verify(plan);
     assert.strictEqual(result.ok, true);
     assert.strictEqual(result.errors.length, 0);
   });

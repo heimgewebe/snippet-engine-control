@@ -15,7 +15,7 @@ export function apply(options: { inputPath?: string; engine?: string; dir?: stri
       rollbackLatestSnapshot: () => rollbackLatestSnapshot(options.dir)
     },
     runtimePort: {
-      verify: (p) => verify(p, options.dir),
+      verify: (p) => verify(p),
       health: () => health(options.dir)
     }
   });

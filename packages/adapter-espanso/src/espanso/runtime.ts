@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import * as yaml from 'yaml';
 
-export function verify(plan: ExportPlan, targetDir?: string): VerificationResult {
+export function verify(plan: ExportPlan): VerificationResult {
   const errors: string[] = [];
 
   for (const change of plan.changes) {

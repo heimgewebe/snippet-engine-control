@@ -519,7 +519,7 @@ Status: completed
 Apply vertrauenswürdig machen.
 
 #### Aufgaben
-- [x] post-apply verification (baseline present, structural verification missing)
+- [x] post-apply verification (structural YAML + content-hash verification implemented)
 - [x] runtime health (basic configuration diagnostics implemented)
 - [x] pre-apply snapshot
 - [x] rollback via latest pre-apply snapshot (MVP)
