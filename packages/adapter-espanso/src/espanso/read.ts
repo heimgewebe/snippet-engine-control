@@ -38,6 +38,11 @@ export function readSnippetsFromEspanso(targetDir?: string): Snippet[] {
         continue;
       }
 
+      // Explicitly exclude snapshot files from being read back into the system
+      if (file.includes('.snapshot.')) {
+        continue;
+      }
+
       const filePath = path.join(matchDir, file);
       let content: string;
       try {

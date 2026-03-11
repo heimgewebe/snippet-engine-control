@@ -3,6 +3,7 @@
 import { validate } from './validate';
 import { exportPlan } from './export';
 import { apply } from './apply';
+import { rollback } from './rollback';
 import { doctor } from './doctor';
 import { lint } from './lint';
 import { startDaemon } from './daemon';
@@ -43,6 +44,9 @@ switch (command) {
   case 'apply':
     apply({ inputPath, engine, dir, isDryRun });
     break;
+  case 'rollback':
+    rollback({ dir });
+    break;
   case 'doctor':
     doctor();
     break;
@@ -78,6 +82,7 @@ Commands:
   validate   Validate IR and engine constraints
   export     Show diffable export plan (dry-run)
   apply      Write and apply snippets
+  rollback   Revert to the last pre-apply snapshot
   doctor     Run common failure mode checks
   lint       Check for conflicts and boundary risks
 `);

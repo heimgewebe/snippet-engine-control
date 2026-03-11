@@ -5,6 +5,7 @@ export * from './services/validation';
 export * from './services/apply';
 export * from './services/draft';
 export * from './services/plan';
+export * from './services/snapshot';
 
 // --- Phase-1 API Surface ---
 // The following models (workspace, store) are exposed temporarily as a root integration API

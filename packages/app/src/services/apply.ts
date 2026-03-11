@@ -1,8 +1,14 @@
 import { ExportPlan } from '@snippet-engine-control/core';
-import { EngineWritePort } from '../ports/engine';
+import { EngineWritePort, EngineRuntimePort, EngineSnapshotPort } from '../ports/engine';
+
+export interface ApplyServiceOptions {
+  writePort: EngineWritePort;
+  runtimePort?: EngineRuntimePort;
+  snapshotPort?: EngineSnapshotPort;
+}
 
 export class ApplyService {
-  constructor(private port: EngineWritePort) {}
+  constructor(private options: ApplyServiceOptions) {}
 
   public applyPlan(plan: ExportPlan, isDryRun: boolean = true): boolean {
     if (plan.unsupportedFeatures && plan.unsupportedFeatures.length > 0) {
@@ -13,7 +19,40 @@ export class ApplyService {
       return false; // did not write
     }
 
-    this.port.writeSnippets(plan);
-    return true; // did write
+    let snapshotId: string | undefined;
+
+    if (this.options.snapshotPort) {
+      snapshotId = this.options.snapshotPort.createSnapshot();
+    }
+
+    try {
+      this.options.writePort.writeSnippets(plan);
+    } catch (writeErr: any) {
+      if (this.options.snapshotPort && snapshotId) {
+        try {
+          this.options.snapshotPort.restoreSnapshot(snapshotId);
+        } catch (rollbackErr: any) {
+          throw new Error(`Write failed and rollback also failed. Write Error: ${writeErr.message} | Rollback Error: ${rollbackErr.message}`);
+        }
+      }
+      throw writeErr;
+    }
+
+    if (this.options.runtimePort) {
+      const verification = this.options.runtimePort.verify(plan);
+      if (!verification.ok) {
+        if (this.options.snapshotPort && snapshotId) {
+          try {
+            this.options.snapshotPort.restoreSnapshot(snapshotId);
+          } catch (rollbackErr: any) {
+            throw new Error(`Verification failed and rollback also failed. Errors: ${verification.errors.join(', ')}`);
+          }
+          throw new Error(`Apply verification failed, rolled back to previous state. Errors: ${verification.errors.join(', ')}`);
+        }
+        throw new Error(`Apply verification failed, but no snapshot was available for rollback. Errors: ${verification.errors.join(', ')}`);
+      }
+    }
+
+    return true; // did write and verify successfully
   }
 }

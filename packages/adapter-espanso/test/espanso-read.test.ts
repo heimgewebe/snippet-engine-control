@@ -130,3 +130,22 @@ matches:
   assert.equal(snippets.length, 1);
   assert.equal(snippets[0].triggers[0], ':good');
 });
+
+test('Espanso Read - ignores snapshot files', (t) => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-espanso-test-snapshot-'));
+  t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
+  const matchDir = path.join(tmpDir, 'match');
+  fs.mkdirSync(matchDir, { recursive: true });
+
+  const yamlContent = `
+matches:
+  - trigger: ":bad"
+    replace: "Should be ignored"
+  `;
+  const filePath = path.join(matchDir, 'sec.generated.snapshot.12345.yml');
+  fs.writeFileSync(filePath, yamlContent);
+
+  const snippets = readSnippetsFromEspanso(tmpDir);
+  assert.equal(snippets.length, 0, 'Snapshot files should not be parsed into snippets');
+});
