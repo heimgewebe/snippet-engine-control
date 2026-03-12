@@ -148,7 +148,14 @@ async function triggerPreview() {
       body: JSON.stringify(currentSnippet)
     });
     const data = await res.json();
-    previewBox.textContent = data.preview;
+    let previewText = data.preview.text || '';
+    if (data.preview.isTemplate) {
+      previewText += '\n\n(Template variables detected)';
+    }
+    if (data.preview.warnings && data.preview.warnings.length > 0) {
+      previewText += '\n\nWarnings:\n' + data.preview.warnings.join('\n');
+    }
+    previewBox.textContent = previewText;
   } catch(err) {
     console.error('Preview error:', err);
   }

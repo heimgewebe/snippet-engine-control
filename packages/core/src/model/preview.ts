@@ -1,5 +1,3 @@
-import { Snippet } from './snippet';
-
 export interface PreviewContext {
   activeApp?: string;
   clipboardText?: string;

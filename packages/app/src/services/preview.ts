@@ -15,10 +15,11 @@ export class PreviewService {
       try {
         return this.enginePort.preview(snippet, ctx);
       } catch (error: any) {
+        const fallback = simulateExpansion(snippet);
+        const engineWarning = `Engine preview failed: ${error.message}`;
         return {
-          text: snippet.body || '',
-          isTemplate: false,
-          warnings: [`Engine preview failed: ${error.message}`]
+          ...fallback,
+          warnings: fallback.warnings ? [...fallback.warnings, engineWarning] : [engineWarning]
         };
       }
     }
