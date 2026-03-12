@@ -2,7 +2,6 @@ import test from 'node:test';
 import * as assert from 'node:assert/strict';
 import { HistoryService } from '../src/services/history';
 import { Workspace } from '../src/model/workspace';
-import { Snippet } from '@snippet-engine-control/core';
 
 function createMockWorkspace(): Workspace {
   return {
@@ -18,8 +17,32 @@ function createMockWorkspace(): Workspace {
             stableId: 'doc-1',
             revisionId: 'rev-1',
             dirty: false,
-            ir: { id: 'rev-1', triggers: ['!hello'], body: 'Hello world' },
-            derived: {}
+            ir: {
+              id: 'rev-1',
+              triggers: ['!hello'],
+              body: 'Hello world',
+              constraints: {
+                appInclude: ['terminal']
+              },
+              tags: ['test'],
+              origin: {
+                source: 'test.yml',
+                path: '/'
+              }
+            },
+            derived: {
+              preview: {
+                text: 'Hello world',
+                isTemplate: false,
+                warnings: ['test-warning']
+              },
+              diagnostics: {
+                triggerCollisions: ['test-collision'],
+                ambiguousBoundaries: [],
+                encodingIssues: [],
+                unsupportedFeatures: []
+              }
+            }
           }
         ]
       }
@@ -50,9 +73,38 @@ test('HistoryService', async (t) => {
     assert.equal(snapshot.activeDocumentId, 'doc-1');
     assert.equal(snapshot.snippetSets[0].snippets[0].ir.body, 'Hello world');
 
-    // Verify it is a deep copy: mutatiing ws should not affect snapshot
+    // Verify it is a deep copy: mutating ws should not affect snapshot
     ws.snippetSets[0].snippets[0].ir.body = 'Mutated';
     assert.equal(snapshot.snippetSets[0].snippets[0].ir.body, 'Hello world');
+  });
+
+  await t.test('pushState deep clones constraints, tags, origin, and derived state', () => {
+    const service = new HistoryService();
+    const ws = createMockWorkspace();
+
+    service.pushState(ws);
+    const snapshot = ws.history.undoStack[0];
+
+    // Mutate nested structures
+    ws.snippetSets[0].snippets[0].ir.constraints!.appInclude!.push('browser');
+    ws.snippetSets[0].snippets[0].ir.constraints!.appExclude = ['ignored'];
+    ws.snippetSets[0].snippets[0].ir.constraints!.localeHints = ['en-US'];
+    ws.snippetSets[0].snippets[0].ir.tags!.push('mutated-tag');
+    ws.snippetSets[0].snippets[0].ir.origin!.source = 'mutated.yml';
+    ws.snippetSets[0].snippets[0].derived.preview!.warnings!.push('new-warning');
+    ws.snippetSets[0].snippets[0].derived.diagnostics!.triggerCollisions!.push('new-collision');
+
+    // Verify snapshot is isolated
+    const snapIr = snapshot.snippetSets[0].snippets[0].ir;
+    assert.deepEqual(snapIr.constraints?.appInclude, ['terminal']);
+    assert.equal(snapIr.constraints?.appExclude, undefined);
+    assert.equal(snapIr.constraints?.localeHints, undefined);
+    assert.deepEqual(snapIr.tags, ['test']);
+    assert.equal(snapIr.origin?.source, 'test.yml');
+
+    const snapDerived = snapshot.snippetSets[0].snippets[0].derived;
+    assert.deepEqual(snapDerived.preview?.warnings, ['test-warning']);
+    assert.deepEqual(snapDerived.diagnostics?.triggerCollisions, ['test-collision']);
   });
 
   await t.test('undo restores previous state and pushes to redoStack', () => {

@@ -1,4 +1,5 @@
 import { Workspace, WorkspaceStateSnapshot, SnippetSet, SnippetDocument } from '../model/workspace';
+import { Snippet } from '@snippet-engine-control/core';
 
 export class HistoryService {
   /**
@@ -50,31 +51,68 @@ export class HistoryService {
   private createSnapshot(workspace: Workspace): WorkspaceStateSnapshot {
     return {
       activeDocumentId: workspace.activeDocumentId,
-      // Create a deep enough clone to preserve state but we can just map and spread
-      // SnippetDocument and SnippetSet since they contain simple objects or arrays
-      snippetSets: workspace.snippetSets.map(set => ({
-        ...set,
-        source: { ...set.source },
-        snippets: set.snippets.map(doc => ({
-          ...doc,
-          ir: {
-            ...doc.ir,
-            triggers: [...doc.ir.triggers],
-          },
-          derived: {
-            ...doc.derived
-            // Deep cloning diagnostic and preview results isn't strictly necessary
-            // as they are regenerated and treated as immutable, but we copy the object shell
-          }
-        }))
-      }))
+      snippetSets: workspace.snippetSets.map(this.cloneSnippetSet.bind(this))
+    };
+  }
+
+  private cloneSnippetSet(set: SnippetSet): SnippetSet {
+    return {
+      ...set,
+      source: { ...set.source },
+      snippets: set.snippets.map(this.cloneSnippetDocument.bind(this))
+    };
+  }
+
+  private cloneSnippetDocument(doc: SnippetDocument): SnippetDocument {
+    return {
+      ...doc,
+      ir: this.cloneSnippet(doc.ir),
+      derived: this.cloneDerivedState(doc.derived)
+    };
+  }
+
+  private cloneSnippet(snippet: Snippet): Snippet {
+    return {
+      ...snippet,
+      triggers: [...snippet.triggers],
+      ...(snippet.constraints ? {
+        constraints: {
+          ...snippet.constraints,
+          ...(snippet.constraints.appInclude ? { appInclude: [...snippet.constraints.appInclude] } : {}),
+          ...(snippet.constraints.appExclude ? { appExclude: [...snippet.constraints.appExclude] } : {}),
+          ...(snippet.constraints.localeHints ? { localeHints: [...snippet.constraints.localeHints] } : {})
+        }
+      } : {}),
+      ...(snippet.tags ? { tags: [...snippet.tags] } : {}),
+      ...(snippet.origin ? { origin: { ...snippet.origin } } : {})
+    };
+  }
+
+  private cloneDerivedState(derived: SnippetDocument['derived']): SnippetDocument['derived'] {
+    // Deep clone structured elements of derived state (like preview and diagnostics)
+    // to prevent retrospective mutation of historical snapshots by subsequent runs.
+    return {
+      ...derived,
+      ...(derived.preview ? {
+        preview: {
+          ...derived.preview,
+          ...(derived.preview.warnings ? { warnings: [...derived.preview.warnings] } : {})
+        }
+      } : {}),
+      ...(derived.diagnostics ? {
+        diagnostics: {
+          ...derived.diagnostics,
+          ...(derived.diagnostics.triggerCollisions ? { triggerCollisions: [...derived.diagnostics.triggerCollisions] } : {}),
+          ...(derived.diagnostics.ambiguousBoundaries ? { ambiguousBoundaries: [...derived.diagnostics.ambiguousBoundaries] } : {}),
+          ...(derived.diagnostics.encodingIssues ? { encodingIssues: [...derived.diagnostics.encodingIssues] } : {}),
+          ...(derived.diagnostics.unsupportedFeatures ? { unsupportedFeatures: [...derived.diagnostics.unsupportedFeatures] } : {})
+        }
+      } : {})
     };
   }
 
   private restoreSnapshot(workspace: Workspace, snapshot: WorkspaceStateSnapshot): void {
     workspace.activeDocumentId = snapshot.activeDocumentId;
     workspace.snippetSets = snapshot.snippetSets;
-    // We should probably trigger a derived state invalidation or let ValidationService handle it,
-    // but the snapshot contains the derived state of that exact moment.
   }
 }
