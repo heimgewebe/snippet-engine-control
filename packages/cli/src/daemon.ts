@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { Snippet } from '@snippet-engine-control/core';
 import { readSnippetsFromEspanso } from '@snippet-engine-control/adapter-espanso';
-import { ValidationService, SnippetService, SnippetStore, DraftService } from '@snippet-engine-control/app';
+import { ValidationService, PreviewService, SnippetStore, DraftService } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
 
 const store = new SnippetStore();
@@ -201,8 +201,8 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
       }
       else if (req.method === 'POST' && pathname === '/api/preview') {
         const draft = JSON.parse(body) as Snippet;
-        const snippetService = new SnippetService();
-        const preview = snippetService.preview(draft);
+        const previewService = new PreviewService();
+        const preview = previewService.previewDocument(draft);
         res.writeHead(200);
         res.end(JSON.stringify({ preview }));
       }

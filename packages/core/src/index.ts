@@ -1,6 +1,7 @@
 export * from './model/snippet';
 export * from './model/engine';
 export * from './model/diagnostics';
+export * from './model/preview';
 export * from './ir/normalize';
 export * from './ir/fingerprint';
 export * from './analyzers/conflicts';

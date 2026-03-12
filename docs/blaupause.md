@@ -545,8 +545,8 @@ Status: planned
 Preview entscheidungsrelevant machen.
 
 #### Ebenen
-- [ ] 1. static
-- [ ] 2. template-aware
+- [x] 1. static
+- [x] 2. template-aware
 - [ ] 3. engine-aware
 - [ ] 4. expansion trace
 
@@ -605,7 +605,7 @@ Mehr Komfort ohne neue Semantikdrift.
 - [x] **PR 3** refactor(app): explicit saveDraft/buildPlan/applyPlan flow
 - [x] **PR 4** build(e2e): prove product flow end-to-end
 - [x] **PR 5** feat(runtime): verification and minimal apply safety (completed)
-- [ ] **PR 6** feat(preview): layered preview pipeline
+- [x] **PR 6** feat(preview): layered preview pipeline (static & template-aware)
 - [ ] **PR 7** feat(history): workspace snapshots and undo/redo
 - [ ] **PR 8+** feat(ui): workbench comfort and navigation
 

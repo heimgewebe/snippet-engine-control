@@ -1,13 +1,29 @@
 import { Snippet } from '../model/snippet';
+import { PreviewResult } from '../model/preview';
 
 /**
- * An MVP expansion simulator.
- * For now, it simply returns the body of the snippet.
- * Future iterations could interpret placeholders (e.g. {{date}}, {{clipboard}}).
+ * A static and template-aware expansion simulator.
+ * Identifies if the body contains basic templates like `{{...}}`.
  */
-export function simulateExpansion(snippet: Snippet): string {
+export function simulateExpansion(snippet: Snippet): PreviewResult {
   if (!snippet.body) {
-    return '';
+    return {
+      text: '',
+      isTemplate: false
+    };
   }
-  return snippet.body;
+
+  // Very basic check for template variables: things like {{date}} or {{clipboard}}
+  const isTemplate = /\{\{.*\}\}/.test(snippet.body);
+  const warnings: string[] = [];
+
+  if (isTemplate) {
+    warnings.push('Contains template variables that may not be fully resolved in static preview.');
+  }
+
+  return {
+    text: snippet.body,
+    isTemplate,
+    warnings: warnings.length > 0 ? warnings : undefined
+  };
 }

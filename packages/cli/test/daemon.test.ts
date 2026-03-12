@@ -83,7 +83,8 @@ test('Daemon Security - Token and Origin validation', async (t) => {
     }, JSON.stringify({ body: "test-success" }));
 
     assert.equal(res.statusCode, 200);
-    assert.match(res.data, /"preview":"test-success"/);
+    assert.match(res.data, /"text":"test-success"/);
+    assert.match(res.data, /"isTemplate":false/);
   });
 
   await t.test('PUT /api/snippets/new-123 creates a new snippet', async () => {
