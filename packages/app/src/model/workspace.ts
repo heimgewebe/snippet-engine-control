@@ -33,10 +33,15 @@ export interface RuntimeState {
   lastVerifiedAt?: number;
 }
 
+export interface WorkspaceStateSnapshot {
+  activeDocumentId?: string;
+  // A deep clone of the SnippetSets at the moment the snapshot was taken
+  snippetSets: SnippetSet[];
+}
+
 export interface WorkspaceHistory {
-  // Placeholder for workspace history
-  undoStack: string[];
-  redoStack: string[];
+  undoStack: WorkspaceStateSnapshot[];
+  redoStack: WorkspaceStateSnapshot[];
 }
 
 export interface SourceRef {

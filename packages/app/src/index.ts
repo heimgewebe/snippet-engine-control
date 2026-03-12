@@ -6,6 +6,7 @@ export * from './services/draft';
 export * from './services/plan';
 export * from './services/snapshot';
 export * from './services/preview';
+export * from './services/history';
 
 // --- Phase-1 API Surface ---
 // The following models (workspace, store) are exposed temporarily as a root integration API
