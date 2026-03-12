@@ -1,4 +1,4 @@
-import { Snippet, ExportPlan, VerificationResult, RuntimeHealth, LogOptions, RuntimeLogChunk } from '@snippet-engine-control/core';
+import { Snippet, ExportPlan, VerificationResult, RuntimeHealth, LogOptions, RuntimeLogChunk, PreviewContext, PreviewResult } from '@snippet-engine-control/core';
 
 export interface EngineReadPort {
   /**
@@ -53,4 +53,11 @@ export interface EngineSnapshotPort {
    * Returns true if a rollback occurred, false if no snapshot was found.
    */
   rollbackLatestSnapshot(): boolean;
+}
+
+export interface EnginePreviewPort {
+  /**
+   * Engine-aware preview generation
+   */
+  preview(snippet: Snippet, ctx: PreviewContext): PreviewResult;
 }
