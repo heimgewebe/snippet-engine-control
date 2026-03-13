@@ -4,9 +4,9 @@ import * as yaml from 'yaml';
 import { Snippet, fingerprint } from '@snippet-engine-control/core';
 import { discoverDirs } from './discover';
 
-export function readSnippets(inputPath?: string): Snippet[] {
+export function readSnippets(inputPath: string): Snippet[] {
   if (!inputPath) {
-    return [];
+    throw new Error('Input path is required to read snippets');
   }
 
   const fullPath = path.resolve(process.cwd(), inputPath);
