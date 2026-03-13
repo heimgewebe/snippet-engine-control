@@ -27,7 +27,7 @@ test('readSnippets - reads JSON file with inputPath', (t) => {
 
 test('readSnippets - throws when inputPath is missing', (t) => {
   assert.throws(() => {
-    // @ts-ignore: testing runtime check for missing argument
+    // Testing runtime check for missing argument despite optional TS signature
     readSnippets();
   }, /Input path is required to read snippets/);
 });
