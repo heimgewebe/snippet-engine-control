@@ -34,13 +34,19 @@ function createMockWorkspace(): Workspace {
               preview: {
                 text: 'Hello world',
                 isTemplate: false,
-                warnings: ['test-warning']
+                warnings: ['test-warning'],
+                trace: ['test-trace']
               },
               diagnostics: {
                 triggerCollisions: ['test-collision'],
                 ambiguousBoundaries: [],
                 encodingIssues: [],
                 unsupportedFeatures: []
+              },
+              exportImpact: {
+                changedFiles: 1,
+                addedSnippets: 0,
+                removedSnippets: 0
               }
             }
           }
@@ -92,7 +98,9 @@ test('HistoryService', async (t) => {
     ws.snippetSets[0].snippets[0].ir.tags!.push('mutated-tag');
     ws.snippetSets[0].snippets[0].ir.origin!.source = 'mutated.yml';
     ws.snippetSets[0].snippets[0].derived.preview!.warnings!.push('new-warning');
+    ws.snippetSets[0].snippets[0].derived.preview!.trace!.push('new-trace');
     ws.snippetSets[0].snippets[0].derived.diagnostics!.triggerCollisions!.push('new-collision');
+    ws.snippetSets[0].snippets[0].derived.exportImpact!.changedFiles = 2;
 
     // Verify snapshot is isolated
     const snapIr = snapshot.snippetSets[0].snippets[0].ir;
@@ -104,7 +112,9 @@ test('HistoryService', async (t) => {
 
     const snapDerived = snapshot.snippetSets[0].snippets[0].derived;
     assert.deepEqual(snapDerived.preview?.warnings, ['test-warning']);
+    assert.deepEqual(snapDerived.preview?.trace, ['test-trace']);
     assert.deepEqual(snapDerived.diagnostics?.triggerCollisions, ['test-collision']);
+    assert.equal(snapDerived.exportImpact?.changedFiles, 1);
   });
 
   await t.test('undo restores previous state and pushes to redoStack', () => {

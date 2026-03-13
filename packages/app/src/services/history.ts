@@ -89,14 +89,15 @@ export class HistoryService {
   }
 
   private cloneDerivedState(derived: SnippetDocument['derived']): SnippetDocument['derived'] {
-    // Deep clone structured elements of derived state (like preview and diagnostics)
+    // Deep clone structured elements of derived state (like preview, diagnostics, exportImpact)
     // to prevent retrospective mutation of historical snapshots by subsequent runs.
     return {
       ...derived,
       ...(derived.preview ? {
         preview: {
           ...derived.preview,
-          ...(derived.preview.warnings ? { warnings: [...derived.preview.warnings] } : {})
+          ...(derived.preview.warnings ? { warnings: [...derived.preview.warnings] } : {}),
+          ...(derived.preview.trace ? { trace: [...derived.preview.trace] } : {})
         }
       } : {}),
       ...(derived.diagnostics ? {
@@ -107,6 +108,10 @@ export class HistoryService {
           ...(derived.diagnostics.encodingIssues ? { encodingIssues: [...derived.diagnostics.encodingIssues] } : {}),
           ...(derived.diagnostics.unsupportedFeatures ? { unsupportedFeatures: [...derived.diagnostics.unsupportedFeatures] } : {})
         }
+      } : {}),
+      ...(derived.exportImpact ? {
+        // exportImpact is flat primitive numbers, spreading is sufficient for a new object reference
+        exportImpact: { ...derived.exportImpact }
       } : {})
     };
   }
