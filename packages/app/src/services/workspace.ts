@@ -19,7 +19,8 @@ export class WorkspaceService {
   }
 
   private calculateRevisionId(snippet: Snippet): string {
-    return fingerprint(snippet).substring(0, 12);
+    const { id, ...content } = snippet;
+    return fingerprint(content as unknown as Snippet).substring(0, 12);
   }
 
   public openWorkspace(options: ValidateOptions): Workspace {
