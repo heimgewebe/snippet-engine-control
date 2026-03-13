@@ -3,7 +3,34 @@ import { test } from 'node:test';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { readSnippetsFromEspanso } from '../src/espanso/read';
+import { readSnippetsFromEspanso, readSnippets } from '../src/espanso/read';
+
+test('readSnippets - reads JSON file with inputPath', (t) => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-read-snippets-'));
+  t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+
+  const snippetsData = [
+    {
+      id: 'test-1',
+      triggers: [':test'],
+      body: 'test body',
+      origin: { source: 'universal', path: 'test.json' }
+    }
+  ];
+  const filePath = path.join(tmpDir, 'test.json');
+  fs.writeFileSync(filePath, JSON.stringify(snippetsData));
+
+  const snippets = readSnippets(filePath);
+  assert.equal(snippets.length, 1);
+  assert.equal(snippets[0].id, 'test-1');
+});
+
+test('readSnippets - throws when inputPath is missing', (t) => {
+  assert.throws(() => {
+    // @ts-ignore: testing runtime check for missing argument
+    readSnippets();
+  }, /Input path is required to read snippets/);
+});
 
 test('Espanso Read - golden path YAML files', (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-espanso-test-'));
