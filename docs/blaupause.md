@@ -557,17 +557,17 @@ Preview hilft real bei Konflikt- und Rollout-Entscheidungen.
 ---
 
 ### Phase 7 — History / Undo / Restore
-Status: planned
+Status: completed
 
 #### Ziel
 
 Interne Vertrauensschicht
 
 #### Aufgaben
-- [ ] workspace history
-- [ ] document revision history
-- [ ] undo/redo
-- [ ] restore from snapshot
+- [x] workspace history
+- [x] document revision history
+- [x] undo/redo
+- [x] restore from snapshot
 
 #### Stop-Kriterium
 
@@ -606,7 +606,7 @@ Mehr Komfort ohne neue Semantikdrift.
 - [x] **PR 4** build(e2e): prove product flow end-to-end
 - [x] **PR 5** feat(runtime): verification and minimal apply safety (completed)
 - [x] **PR 6** feat(preview): layered preview pipeline (static & template-aware)
-- [ ] **PR 7** feat(history): workspace snapshots and undo/redo
+- [x] **PR 7** feat(history): workspace snapshots and undo/redo (completed)
 - [ ] **PR 8+** feat(ui): workbench comfort and navigation
 
 ---
