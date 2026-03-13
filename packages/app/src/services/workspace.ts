@@ -15,8 +15,9 @@ export class WorkspaceService {
     if (options.engine === 'espanso') {
       return this.engine.readSnippetsFromEngine(options.dir);
     } else {
-      // allow options.inputPath to be undefined, as the adapter may have a default behavior or
-      // rely on environment variables (like SEC_SNIPPETS) which we want to preserve.
+      if (!options.inputPath) {
+        throw new Error('Input path is required to read snippets');
+      }
       return this.engine.readSnippets(options.inputPath);
     }
   }

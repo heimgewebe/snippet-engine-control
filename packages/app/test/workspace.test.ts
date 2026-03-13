@@ -15,18 +15,14 @@ test('WorkspaceService', async (t) => {
     assert.strictEqual(result.collisions.length, 0);
   });
 
-  await t.test('calls readSnippets correctly when inputPath is omitted and engine is not espanso', () => {
-    let wasCalled = false;
+  await t.test('throws an error when inputPath is omitted and engine is not espanso', () => {
     const service = new WorkspaceService({
-      readSnippets: (path) => {
-        assert.strictEqual(path, undefined);
-        wasCalled = true;
-        return [];
-      },
+      readSnippets: (path) => { return []; },
       readSnippetsFromEngine: () => { throw new Error('Should not be called'); }
     });
 
-    service.validate({});
-    assert.strictEqual(wasCalled, true);
+    assert.throws(() => {
+      service.validate({});
+    }, /Input path is required to read snippets/);
   });
 });
