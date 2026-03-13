@@ -1,15 +1,17 @@
-import * as crypto from 'crypto';
 import { EngineReadPort } from '../ports/engine';
-import { Snippet, fingerprint } from '@snippet-engine-control/core';
+import { Snippet } from '@snippet-engine-control/core';
 import { ValidationService, ValidationResult } from './validation';
-import { Workspace } from '../model/workspace';
-import { HistoryService } from './history';
 
 export interface ValidateOptions {
   inputPath?: string;
   engine?: string;
   dir?: string;
 }
+
+import * as crypto from 'crypto';
+import { Workspace } from '../model/workspace';
+import { HistoryService } from './history';
+import { fingerprint } from '@snippet-engine-control/core';
 
 export class WorkspaceService {
   private historyService: HistoryService;
@@ -105,9 +107,12 @@ export class WorkspaceService {
     if (options.engine === 'espanso') {
       return this.engine.readSnippetsFromEngine(options.dir);
     } else {
-      // allow options.inputPath to be undefined, as the adapter may have a default behavior or
-      // rely on environment variables (like SEC_SNIPPETS) which we want to preserve.
-      return this.engine.readSnippets(options.inputPath);
+      // Orchestration layer resolves environment defaults and decides whether to be tolerant.
+      const inputPath = options.inputPath ?? process.env.SEC_SNIPPETS;
+      if (!inputPath) {
+        return [];
+      }
+      return this.engine.readSnippets(inputPath);
     }
   }
 

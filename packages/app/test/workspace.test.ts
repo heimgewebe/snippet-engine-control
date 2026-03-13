@@ -15,19 +15,15 @@ test('WorkspaceService', async (t) => {
     assert.strictEqual(result.collisions.length, 0);
   });
 
-  await t.test('calls readSnippets correctly when inputPath is omitted and engine is not espanso', () => {
-    let wasCalled = false;
+  await t.test('returns empty results without calling readSnippets when inputPath is omitted and engine is not espanso', () => {
     const service = new WorkspaceService({
-      readSnippets: (path) => {
-        assert.strictEqual(path, undefined);
-        wasCalled = true;
-        return [];
-      },
+      readSnippets: () => { throw new Error('Should not be called because inputPath is missing'); },
       readSnippetsFromEngine: () => { throw new Error('Should not be called'); }
     });
 
-    service.validate({});
-    assert.strictEqual(wasCalled, true);
+    const result = service.validate({});
+    assert.strictEqual(result.hasErrors, false);
+    assert.strictEqual(result.collisions.length, 0);
   });
 
   await t.test('openWorkspace() normalizes document identity via fingerprint', () => {
@@ -38,7 +34,8 @@ test('WorkspaceService', async (t) => {
       readSnippetsFromEngine: () => []
     });
 
-    const ws = service.openWorkspace({});
+    // Provide inputPath so that loadSnippets bypasses the empty fallback
+    const ws = service.openWorkspace({ inputPath: 'test' });
     const doc = ws.snippetSets[0].snippets[0];
 
     assert.notEqual(doc.revisionId, 'some-random-engine-id', 'revisionId should be computed from fingerprint, not raw ID');
@@ -54,7 +51,7 @@ test('WorkspaceService', async (t) => {
       readSnippetsFromEngine: () => []
     });
 
-    const ws = service.openWorkspace({});
+    const ws = service.openWorkspace({ inputPath: 'test' });
     const doc = ws.snippetSets[0].snippets[0];
     const initialRevisionId = doc.revisionId;
 
@@ -105,7 +102,7 @@ test('WorkspaceService', async (t) => {
       readSnippetsFromEngine: () => []
     });
 
-    const ws = service.openWorkspace({});
+    const ws = service.openWorkspace({ inputPath: 'test' });
     const doc2 = ws.snippetSets[0].snippets[1];
 
     service.selectDocument(ws, doc2.stableId);
@@ -121,7 +118,7 @@ test('WorkspaceService', async (t) => {
       readSnippetsFromEngine: () => []
     });
 
-    const ws = service.openWorkspace({});
+    const ws = service.openWorkspace({ inputPath: 'test' });
     const doc = ws.snippetSets[0].snippets[0];
 
     service.updateDocument(ws, doc.stableId, { id: 'dummy1', triggers: ['!hello'], body: 'Update 1' });
