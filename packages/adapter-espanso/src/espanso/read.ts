@@ -4,14 +4,17 @@ import * as yaml from 'yaml';
 import { Snippet, fingerprint } from '@snippet-engine-control/core';
 import { discoverDirs } from './discover';
 
-export function readSnippets(inputPath?: string): Snippet[] {
-  // Minimal MVP loader: loads JSON fixture instead of parsing YAML.
-  const fixturePath = inputPath ? path.resolve(process.cwd(), inputPath) : path.resolve(process.cwd(), 'fixtures/snippets.sample.json');
+export function readSnippets(inputPath: string): Snippet[] {
+  if (!inputPath) {
+    throw new Error('Input path is required to read snippets');
+  }
+
+  const fullPath = path.resolve(process.cwd(), inputPath);
   try {
-    const data = fs.readFileSync(fixturePath, 'utf8');
+    const data = fs.readFileSync(fullPath, 'utf8');
     return JSON.parse(data) as Snippet[];
   } catch (error) {
-    throw new Error(`Failed to read snippets from ${fixturePath}: ${(error as Error).message}`);
+    throw new Error(`Failed to read snippets from ${fullPath}: ${(error as Error).message}`);
   }
 }
 
