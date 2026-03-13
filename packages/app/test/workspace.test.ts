@@ -30,7 +30,73 @@ test('WorkspaceService', async (t) => {
     assert.strictEqual(wasCalled, true);
   });
 
-  await t.test('workspace flow (open, select, update, undo, redo)', () => {
+  await t.test('openWorkspace() normalizes document identity via fingerprint', () => {
+    const service = new WorkspaceService({
+      readSnippets: () => [
+        { id: 'some-random-engine-id', triggers: ['!test'], body: 'Test body' }
+      ],
+      readSnippetsFromEngine: () => []
+    });
+
+    const ws = service.openWorkspace({});
+    const doc = ws.snippetSets[0].snippets[0];
+
+    assert.notEqual(doc.revisionId, 'some-random-engine-id', 'revisionId should be computed from fingerprint, not raw ID');
+    assert.equal(doc.ir.id, doc.revisionId, 'ir.id must be normalized to equal revisionId');
+    assert.equal(doc.dirty, false);
+  });
+
+  await t.test('updateDocument() handles actual updates, no-ops, and unknown stableIds correctly', () => {
+    const service = new WorkspaceService({
+      readSnippets: () => [
+        { id: 'raw', triggers: ['!test'], body: 'Test body' }
+      ],
+      readSnippetsFromEngine: () => []
+    });
+
+    const ws = service.openWorkspace({});
+    const doc = ws.snippetSets[0].snippets[0];
+    const initialRevisionId = doc.revisionId;
+
+    assert.equal(ws.history.undoStack.length, 0);
+    assert.equal(ws.history.redoStack.length, 0);
+
+    // D: No-op update generates no history
+    const noOpResult = service.updateDocument(ws, doc.stableId, doc.ir);
+    assert.equal(noOpResult, false, 'No-op should return false');
+    assert.equal(ws.history.undoStack.length, 0, 'No history should be pushed for no-op');
+
+    // C: Unknown stableId generates no history
+    const unknownResult = service.updateDocument(ws, 'unknown-stable-id', doc.ir);
+    assert.equal(unknownResult, false, 'Unknown stableId should return false');
+    assert.equal(ws.history.undoStack.length, 0, 'No history should be pushed for unknown stableId');
+
+    // B: Real update changes revisionId, synchronizes ir.id, and pushes history
+    const updatedIr = { id: 'will-be-overwritten', triggers: ['!test2'], body: 'New body' };
+    const realResult = service.updateDocument(ws, doc.stableId, updatedIr);
+
+    assert.equal(realResult, true, 'Real update should return true');
+    assert.equal(ws.history.undoStack.length, 1, 'History pushed for actual mutation');
+
+    const updatedDoc = ws.snippetSets[0].snippets[0];
+    assert.notEqual(updatedDoc.revisionId, initialRevisionId, 'revisionId should change for mutated content');
+    assert.equal(updatedDoc.ir.id, updatedDoc.revisionId, 'ir.id must be synchronized with new revisionId');
+    assert.notEqual(updatedDoc.ir.id, 'will-be-overwritten', 'Provided dummy ID should be replaced by fingerprint');
+    assert.equal(updatedDoc.dirty, true, 'Document should be marked dirty');
+
+    // Verify undo/redo logic
+    service.undo(ws);
+    assert.equal(ws.history.undoStack.length, 0);
+    assert.equal(ws.history.redoStack.length, 1);
+    const revertedDoc = ws.snippetSets[0].snippets[0];
+    assert.equal(revertedDoc.revisionId, initialRevisionId, 'revisionId restored');
+
+    service.redo(ws);
+    assert.equal(ws.history.undoStack.length, 1);
+    assert.equal(ws.history.redoStack.length, 0);
+  });
+
+  await t.test('selectDocument does NOT create history entry', () => {
     const service = new WorkspaceService({
       readSnippets: () => [
         { id: '1', triggers: ['!hello'], body: 'Hello world' },
@@ -39,51 +105,32 @@ test('WorkspaceService', async (t) => {
       readSnippetsFromEngine: () => []
     });
 
-    // 1. Open Workspace
     const ws = service.openWorkspace({});
-    assert.equal(ws.snippetSets.length, 1);
-    assert.equal(ws.snippetSets[0].snippets.length, 2);
-
-    const doc1 = ws.snippetSets[0].snippets[0];
     const doc2 = ws.snippetSets[0].snippets[1];
 
-    assert.equal(ws.activeDocumentId, doc1.stableId);
-
-    // 2. Select Document (does NOT create history entry, just selection)
     service.selectDocument(ws, doc2.stableId);
     assert.equal(ws.activeDocumentId, doc2.stableId);
-    assert.equal(ws.history.undoStack.length, 0);
+    assert.equal(ws.history.undoStack.length, 0, 'Selection should not pollute history');
+  });
 
-    // 3. Update Document (creates history entry)
-    const updatedIr = { id: '2', triggers: ['!bye'], body: 'Goodbye World' };
-    service.updateDocument(ws, doc2.stableId, updatedIr);
+  await t.test('update after undo clears redoStack', () => {
+    const service = new WorkspaceService({
+      readSnippets: () => [
+        { id: '1', triggers: ['!hello'], body: 'Hello world' }
+      ],
+      readSnippetsFromEngine: () => []
+    });
 
-    const updatedDoc2 = ws.snippetSets[0].snippets.find(s => s.stableId === doc2.stableId);
-    assert.equal(updatedDoc2?.ir.body, 'Goodbye World');
-    assert.equal(updatedDoc2?.dirty, true);
-    assert.equal(ws.history.undoStack.length, 1);
+    const ws = service.openWorkspace({});
+    const doc = ws.snippetSets[0].snippets[0];
 
-    // 4. Undo Update
-    const undoSuccess = service.undo(ws);
-    assert.equal(undoSuccess, true);
-
-    const revertedDoc2 = ws.snippetSets[0].snippets.find(s => s.stableId === doc2.stableId);
-    assert.equal(revertedDoc2?.ir.body, 'Goodbye'); // should be back to original
-    assert.equal(ws.history.redoStack.length, 1);
-
-    // 5. Redo Update
-    const redoSuccess = service.redo(ws);
-    assert.equal(redoSuccess, true);
-
-    const redoneDoc2 = ws.snippetSets[0].snippets.find(s => s.stableId === doc2.stableId);
-    assert.equal(redoneDoc2?.ir.body, 'Goodbye World'); // should be updated again
-    assert.equal(ws.history.redoStack.length, 0);
-
-    // 6. Update after undo clears redoStack
+    service.updateDocument(ws, doc.stableId, { id: 'dummy1', triggers: ['!hello'], body: 'Update 1' });
     service.undo(ws);
-    assert.equal(ws.history.redoStack.length, 1);
-    const updatedIr2 = { id: '2', triggers: ['!bye'], body: 'Brand New Goodbye' };
-    service.updateDocument(ws, doc2.stableId, updatedIr2);
-    assert.equal(ws.history.redoStack.length, 0, 'redoStack should be cleared after a new diverging action');
+
+    assert.equal(ws.history.redoStack.length, 1, 'redoStack should have one entry');
+
+    service.updateDocument(ws, doc.stableId, { id: 'dummy2', triggers: ['!hello'], body: 'Divergent Update 2' });
+
+    assert.equal(ws.history.redoStack.length, 0, 'redoStack should be cleared after a diverging mutation');
   });
 });

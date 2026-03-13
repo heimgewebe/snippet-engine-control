@@ -1,6 +1,9 @@
+import * as crypto from 'crypto';
 import { EngineReadPort } from '../ports/engine';
-import { Snippet } from '@snippet-engine-control/core';
+import { Snippet, fingerprint } from '@snippet-engine-control/core';
 import { ValidationService, ValidationResult } from './validation';
+import { Workspace } from '../model/workspace';
+import { HistoryService } from './history';
 
 export interface ValidateOptions {
   inputPath?: string;
@@ -8,15 +11,15 @@ export interface ValidateOptions {
   dir?: string;
 }
 
-import { Workspace, SnippetDocument } from '../model/workspace';
-import { HistoryService } from './history';
-import * as crypto from 'crypto';
-
 export class WorkspaceService {
   private historyService: HistoryService;
 
   constructor(private engine: EngineReadPort) {
     this.historyService = new HistoryService();
+  }
+
+  private calculateRevisionId(snippet: Snippet): string {
+    return fingerprint(snippet).substring(0, 12);
   }
 
   public openWorkspace(options: ValidateOptions): Workspace {
@@ -27,13 +30,18 @@ export class WorkspaceService {
         id: crypto.randomUUID(),
         name: 'default',
         source: { type: 'engine', path: options.dir || 'default' },
-        snippets: snippets.map((s) => ({
-          stableId: crypto.randomUUID(),
-          revisionId: s.id,
-          ir: s,
-          dirty: false,
-          derived: {}
-        }))
+        snippets: snippets.map((s) => {
+          const revisionId = this.calculateRevisionId(s);
+          const normalizedIr = { ...s, id: revisionId };
+
+          return {
+            stableId: crypto.randomUUID(),
+            revisionId,
+            ir: normalizedIr,
+            dirty: false,
+            derived: {}
+          };
+        })
       }
     ];
 
@@ -54,22 +62,34 @@ export class WorkspaceService {
     workspace.activeDocumentId = stableId;
   }
 
-  public updateDocument(workspace: Workspace, stableId: string, updatedIr: Snippet): void {
-    this.historyService.pushState(workspace);
-
+  public updateDocument(workspace: Workspace, stableId: string, updatedIr: Snippet): boolean {
     for (const set of workspace.snippetSets) {
       const docIndex = set.snippets.findIndex(d => d.stableId === stableId);
       if (docIndex !== -1) {
         const existingDoc = set.snippets[docIndex];
+        const newRevisionId = this.calculateRevisionId(updatedIr);
+
+        // No-op update check: If the new revision matches the existing one, nothing effectively changed.
+        if (existingDoc.revisionId === newRevisionId) {
+          return false;
+        }
+
+        const normalizedIr = { ...updatedIr, id: newRevisionId };
+
+        // Only push to history when an actual mutation takes place
+        this.historyService.pushState(workspace);
+
         set.snippets[docIndex] = {
           ...existingDoc,
-          ir: updatedIr,
+          revisionId: newRevisionId,
+          ir: normalizedIr,
           dirty: true,
           derived: {} // clear derived state as it might be invalid now
         };
-        break;
+        return true;
       }
     }
+    return false; // Document not found
   }
 
   public undo(workspace: Workspace): boolean {
