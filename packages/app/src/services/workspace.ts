@@ -15,9 +15,12 @@ export class WorkspaceService {
     if (options.engine === 'espanso') {
       return this.engine.readSnippetsFromEngine(options.dir);
     } else {
-      // allow options.inputPath to be undefined, as the adapter may have a default behavior or
-      // rely on environment variables (like SEC_SNIPPETS) which we want to preserve.
-      return this.engine.readSnippets(options.inputPath);
+      // Orchestration layer resolves environment defaults and decides whether to be tolerant.
+      const inputPath = options.inputPath ?? process.env.SEC_SNIPPETS;
+      if (!inputPath) {
+        return [];
+      }
+      return this.engine.readSnippets(inputPath);
     }
   }
 
