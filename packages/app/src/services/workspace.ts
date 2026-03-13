@@ -15,12 +15,12 @@ export class WorkspaceService {
     if (options.engine === 'espanso') {
       return this.engine.readSnippetsFromEngine(options.dir);
     } else {
-      // Orchestration layer decides whether to be tolerant.
-      // If no explicit path or Env default (like SEC_SNIPPETS) was provided, return empty.
-      if (!options.inputPath) {
+      // Orchestration layer resolves environment defaults and decides whether to be tolerant.
+      const inputPath = options.inputPath ?? process.env.SEC_SNIPPETS;
+      if (!inputPath) {
         return [];
       }
-      return this.engine.readSnippets(options.inputPath);
+      return this.engine.readSnippets(inputPath);
     }
   }
 
