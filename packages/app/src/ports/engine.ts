@@ -4,7 +4,7 @@ export interface EngineReadPort {
   /**
    * Reads snippets from a source path
    */
-  readSnippets(inputPath: string): Snippet[];
+  readSnippets(inputPath?: string): Snippet[];
 
   /**
    * Reads snippets directly from the engine's configuration directory

@@ -25,11 +25,9 @@ test('readSnippets - reads JSON file with inputPath', (t) => {
   assert.equal(snippets[0].id, 'test-1');
 });
 
-test('readSnippets - throws when inputPath is missing', (t) => {
-  assert.throws(() => {
-    // @ts-ignore: testing runtime check for missing argument
-    readSnippets();
-  }, /Input path is required to read snippets/);
+test('readSnippets - returns empty array when inputPath is missing', (t) => {
+  const snippets = readSnippets();
+  assert.deepEqual(snippets, []);
 });
 
 test('Espanso Read - golden path YAML files', (t) => {
