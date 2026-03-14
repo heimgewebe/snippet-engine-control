@@ -162,6 +162,9 @@ function closeTab(id) {
     if (openTabs.length > 0) {
       selectSnippet(openTabs[openTabs.length - 1]);
     } else {
+      previewBox.textContent = '';
+      diagnosticsBox.className = 'diagnostics clean';
+      diagnosticsBox.innerHTML = 'All good.';
       renderList();
       renderTabs();
       updateStatus();
@@ -318,13 +321,13 @@ btnSave.addEventListener('click', async () => {
     });
 
     if (!res.ok) {
+      const textData = await res.text();
       let errorMessage = `Status: ${res.status}`;
       try {
-        const errorData = await res.json();
+        const errorData = JSON.parse(textData);
         if (errorData.error) errorMessage = errorData.error;
       } catch (e) {
         // Fallback to text if JSON parsing fails
-        const textData = await res.text();
         if (textData) errorMessage = textData;
       }
       throw new Error(errorMessage);

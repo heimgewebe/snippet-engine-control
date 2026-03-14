@@ -607,7 +607,7 @@ Mehr Komfort ohne neue Semantikdrift.
 - [x] **PR 5** feat(runtime): verification and minimal apply safety (completed)
 - [x] **PR 6** feat(preview): layered preview pipeline (static & template-aware)
 - [x] **PR 7** feat(history): workspace snapshots and undo/redo (completed)
-- [x] **PR 8+** feat(ui): workbench comfort and navigation (Tabs, Search/Filter, Statusbar)
+- [ ] **PR 8+** feat(ui): workbench comfort and navigation (partial: Tabs, Search/Filter, Statusbar)
 
 ---
 
