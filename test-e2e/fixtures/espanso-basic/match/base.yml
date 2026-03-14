@@ -1,0 +1,5 @@
+matches:
+  - trigger: ":date"
+    replace: "2023-10-27"
+  - trigger: ":time"
+    replace: "12:00"

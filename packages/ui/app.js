@@ -93,26 +93,53 @@ function renderList() {
     return triggers.includes(query) || body.includes(query);
   });
 
+  // Group snippets by origin.path (or 'Unsaved' / 'Unknown File')
+  const groups = new Map();
+
   filtered.forEach(s => {
-    const li = document.createElement('li');
-    li.dataset.id = s.id;
-    if (currentSnippet && currentSnippet.id === s.id) {
-      li.className = 'selected';
+    let groupName = 'Unknown File';
+    if (s.id.startsWith('new-')) {
+      groupName = 'Unsaved';
+    } else if (s.origin && s.origin.path) {
+      // Extract filename from the path
+      const parts = s.origin.path.split(/[/\\]/);
+      groupName = parts[parts.length - 1];
     }
 
-    const triggerSpan = document.createElement('span');
-    triggerSpan.className = 'trigger';
-    triggerSpan.textContent = s.triggers.join(', ') || 'No trigger';
+    if (!groups.has(groupName)) {
+      groups.set(groupName, []);
+    }
+    groups.get(groupName).push(s);
+  });
 
-    const bodySpan = document.createElement('span');
-    bodySpan.className = 'snippet-body-preview';
-    bodySpan.textContent = s.body;
+  // Render groups
+  groups.forEach((groupSnippets, groupName) => {
+    const header = document.createElement('div');
+    header.className = 'explorer-group-header';
+    header.textContent = groupName;
+    listEl.appendChild(header);
 
-    li.appendChild(triggerSpan);
-    li.appendChild(bodySpan);
+    groupSnippets.forEach(s => {
+      const li = document.createElement('li');
+      li.dataset.id = s.id;
+      if (currentSnippet && currentSnippet.id === s.id) {
+        li.className = 'selected';
+      }
 
-    li.addEventListener('click', () => selectSnippet(s.id));
-    listEl.appendChild(li);
+      const triggerSpan = document.createElement('span');
+      triggerSpan.className = 'trigger';
+      triggerSpan.textContent = s.triggers.join(', ') || 'No trigger';
+
+      const bodySpan = document.createElement('span');
+      bodySpan.className = 'snippet-body-preview';
+      bodySpan.textContent = s.body;
+
+      li.appendChild(triggerSpan);
+      li.appendChild(bodySpan);
+
+      li.addEventListener('click', () => selectSnippet(s.id));
+      listEl.appendChild(li);
+    });
   });
 }
 
