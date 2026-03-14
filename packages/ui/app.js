@@ -15,9 +15,13 @@ const inputId = document.getElementById('input-id');
 const inputTriggers = document.getElementById('input-triggers');
 const inputBody = document.getElementById('input-body');
 const inputWord = document.getElementById('input-word');
+const inputSearch = document.getElementById('input-search');
 
 const diagnosticsBox = document.getElementById('diagnostics-box');
 const previewBox = document.getElementById('preview-box');
+
+const statusLeft = document.getElementById('status-left');
+const statusRight = document.getElementById('status-right');
 
 const modalExport = document.getElementById('modal-export');
 const exportContent = document.getElementById('export-plan-content');
@@ -36,6 +40,7 @@ async function fetchSnippets() {
 
     snippets = await res.json();
     renderList();
+    updateStatus();
     if (snippets.length > 0 && !currentSnippet) {
       selectSnippet(snippets[0].id);
     }
@@ -44,9 +49,35 @@ async function fetchSnippets() {
   }
 }
 
+function updateStatus() {
+  if (snippets) {
+    statusRight.textContent =
+      `${snippets.length} snippet${snippets.length === 1 ? '' : 's'}`;
+  }
+
+  if (currentSnippet) {
+    let text = `Selected: ${currentSnippet.id}`;
+    if (currentSnippet.id.startsWith('new-')) {
+      text += ' (unsaved)';
+    }
+    statusLeft.textContent = text;
+  } else {
+    statusLeft.textContent = `Ready`;
+  }
+}
+
 function renderList() {
   listEl.innerHTML = '';
-  snippets.forEach(s => {
+  const query = inputSearch.value.toLowerCase();
+
+  const filtered = snippets.filter(s => {
+    if (!query) return true;
+    const triggers = s.triggers.join(', ').toLowerCase();
+    const body = s.body.toLowerCase();
+    return triggers.includes(query) || body.includes(query);
+  });
+
+  filtered.forEach(s => {
     const li = document.createElement('li');
     li.dataset.id = s.id;
     if (currentSnippet && currentSnippet.id === s.id) {
@@ -80,6 +111,7 @@ function selectSnippet(id) {
   inputWord.checked = s.constraints?.wordBoundary || false;
 
   renderList();
+  updateStatus();
   triggerValidation();
 }
 
@@ -107,6 +139,7 @@ function handleEdit() {
 
   // update UI optimistically
   renderList();
+  updateStatus();
 
   // Debounce validation
   if (timeoutId) clearTimeout(timeoutId);
@@ -189,6 +222,7 @@ function renderDiagnostics(diag) {
 inputTriggers.addEventListener('input', handleEdit);
 inputBody.addEventListener('input', handleEdit);
 inputWord.addEventListener('change', handleEdit);
+inputSearch.addEventListener('input', renderList);
 
 
 btnSave.addEventListener('click', async () => {
@@ -216,6 +250,7 @@ btnSave.addEventListener('click', async () => {
     currentSnippet = saved;
     inputId.value = saved.id;
     renderList();
+    updateStatus();
     alert('Snippet saved');
   } catch (err) {
     console.error('Save error:', err);
@@ -244,6 +279,7 @@ btnDelete.addEventListener('click', async () => {
     if (idx >= 0) snippets.splice(idx, 1);
     currentSnippet = null;
     renderList();
+    updateStatus();
     if (snippets.length > 0) selectSnippet(snippets[0].id);
     return;
   }
@@ -261,12 +297,14 @@ btnDelete.addEventListener('click', async () => {
       if (idx >= 0) snippets.splice(idx, 1);
       currentSnippet = null;
       renderList();
+      updateStatus();
       if (snippets.length > 0) {
         selectSnippet(snippets[0].id);
       } else {
         inputId.value = '';
         inputTriggers.value = '';
         inputBody.value = '';
+        updateStatus();
       }
     } else {
       alert('Failed to delete');
