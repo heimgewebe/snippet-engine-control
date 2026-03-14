@@ -113,6 +113,10 @@
       cursor: pointer;
       font-weight: bold;
       color: #9ca3af;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
     }
     .tab-close:hover {
       color: #ef4444;
@@ -285,7 +289,7 @@
   </aside>
 
   <main>
-    <div class="tab-bar" id="tab-bar">
+    <div class="tab-bar" id="tab-bar" role="tablist">
       <!-- Populated by JS -->
     </div>
     <div class="toolbar">

@@ -128,25 +128,39 @@ function renderTabs() {
 
     const tab = document.createElement('div');
     tab.className = 'tab';
-    if (currentSnippet && currentSnippet.id === id) {
+    tab.setAttribute('role', 'tab');
+
+    const isActive = (currentSnippet && currentSnippet.id === id);
+    if (isActive) {
       tab.classList.add('active');
     }
+    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    tab.tabIndex = isActive ? 0 : -1;
+
     tab.addEventListener('click', () => selectSnippet(id));
+    tab.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectSnippet(id);
+      }
+    });
 
     const titleSpan = document.createElement('span');
     titleSpan.textContent = displayLabel;
     titleSpan.title = s.id;
 
-    const closeSpan = document.createElement('span');
-    closeSpan.className = 'tab-close';
-    closeSpan.textContent = 'x';
-    closeSpan.addEventListener('click', (e) => {
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'tab-close';
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', `Close tab ${displayLabel}`);
+    closeBtn.textContent = 'x';
+    closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       closeTab(id);
     });
 
     tab.appendChild(titleSpan);
-    tab.appendChild(closeSpan);
+    tab.appendChild(closeBtn);
     tabBar.appendChild(tab);
   });
 }
@@ -359,7 +373,8 @@ btnSave.addEventListener('click', async () => {
     alert('Snippet saved');
   } catch (err) {
     console.error('Save error:', err);
-    alert(`Failed to save: ${err.message}`);
+    const message = err && err.message ? err.message : 'Unknown error';
+    alert(`Failed to save: ${message}`);
   }
 });
 
