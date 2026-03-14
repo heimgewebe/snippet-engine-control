@@ -131,11 +131,11 @@ function renderTabs() {
     if (currentSnippet && currentSnippet.id === id) {
       tab.classList.add('active');
     }
+    tab.addEventListener('click', () => selectSnippet(id));
 
     const titleSpan = document.createElement('span');
     titleSpan.textContent = displayLabel;
     titleSpan.title = s.id;
-    titleSpan.addEventListener('click', () => selectSnippet(id));
 
     const closeSpan = document.createElement('span');
     closeSpan.className = 'tab-close';
@@ -316,6 +316,20 @@ btnSave.addEventListener('click', async () => {
       },
       body: JSON.stringify(draft)
     });
+
+    if (!res.ok) {
+      let errorMessage = `Status: ${res.status}`;
+      try {
+        const errorData = await res.json();
+        if (errorData.error) errorMessage = errorData.error;
+      } catch (e) {
+        // Fallback to text if JSON parsing fails
+        const textData = await res.text();
+        if (textData) errorMessage = textData;
+      }
+      throw new Error(errorMessage);
+    }
+
     const saved = await res.json();
 
     // Update local cache
@@ -342,7 +356,7 @@ btnSave.addEventListener('click', async () => {
     alert('Snippet saved');
   } catch (err) {
     console.error('Save error:', err);
-    alert('Failed to save');
+    alert(`Failed to save: ${err.message}`);
   }
 });
 
@@ -384,10 +398,10 @@ btnDelete.addEventListener('click', async () => {
       const idx = snippets.findIndex(s => s.id === currentSnippet.id);
       if (idx >= 0) snippets.splice(idx, 1);
 
-      const removedId = currentSnippet.id;
       currentSnippet = null;
 
-      openTabs = openTabs.filter(tid => tid !== removedId);
+      // Clean up stale tabs against actual snippets array
+      openTabs = openTabs.filter(tid => snippets.some(s => s.id === tid));
 
       renderList();
       renderTabs();
@@ -401,6 +415,9 @@ btnDelete.addEventListener('click', async () => {
         inputId.value = '';
         inputTriggers.value = '';
         inputBody.value = '';
+        previewBox.textContent = '';
+        diagnosticsBox.className = 'diagnostics clean';
+        diagnosticsBox.innerHTML = 'All good.';
         updateStatus();
       }
     } else {
