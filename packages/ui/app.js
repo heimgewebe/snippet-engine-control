@@ -3,9 +3,11 @@ const API_BASE = '/api';
 // State
 let snippets = [];
 let currentSnippet = null;
+let openTabs = []; // array of snippet IDs
 
 // DOM Elements
 const listEl = document.getElementById('snippet-list');
+const tabBar = document.getElementById('tab-bar');
 const btnNew = document.getElementById('btn-new');
 const btnSave = document.getElementById('btn-save');
 const btnDelete = document.getElementById('btn-delete');
@@ -61,8 +63,22 @@ function updateStatus() {
       text += ' (unsaved)';
     }
     statusLeft.textContent = text;
+
+    // Enable inputs
+    inputTriggers.disabled = false;
+    inputBody.disabled = false;
+    inputWord.disabled = false;
+    btnSave.disabled = false;
+    btnDelete.disabled = false;
   } else {
     statusLeft.textContent = `Ready`;
+
+    // Disable inputs
+    inputTriggers.disabled = true;
+    inputBody.disabled = true;
+    inputWord.disabled = true;
+    btnSave.disabled = true;
+    btnDelete.disabled = true;
   }
 }
 
@@ -100,9 +116,86 @@ function renderList() {
   });
 }
 
+function renderTabs() {
+  tabBar.innerHTML = '';
+  openTabs.forEach(id => {
+    const s = snippets.find(x => x.id === id);
+    if (!s) return; // ignore invalid tabs
+
+    const isUnsaved = id.startsWith('new-');
+    const triggersText = s.triggers.length > 0 ? s.triggers.join(', ') : '(No trigger)';
+    const displayLabel = `${triggersText}${isUnsaved ? ' *' : ''}`;
+
+    const tab = document.createElement('div');
+    tab.className = 'tab';
+    tab.setAttribute('role', 'tab');
+
+    const isActive = (currentSnippet && currentSnippet.id === id);
+    if (isActive) {
+      tab.classList.add('active');
+    }
+    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    tab.tabIndex = isActive ? 0 : -1;
+
+    tab.addEventListener('click', () => selectSnippet(id));
+    tab.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectSnippet(id);
+      }
+    });
+
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = displayLabel;
+    titleSpan.title = s.id;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'tab-close';
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', `Close tab ${displayLabel}`);
+    closeBtn.textContent = 'x';
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeTab(id);
+    });
+
+    tab.appendChild(titleSpan);
+    tab.appendChild(closeBtn);
+    tabBar.appendChild(tab);
+  });
+}
+
+function closeTab(id) {
+  openTabs = openTabs.filter(tid => tid !== id);
+  if (currentSnippet && currentSnippet.id === id) {
+    currentSnippet = null;
+    inputId.value = '';
+    inputTriggers.value = '';
+    inputBody.value = '';
+    inputWord.checked = false;
+    if (openTabs.length > 0) {
+      selectSnippet(openTabs[openTabs.length - 1]);
+    } else {
+      previewBox.textContent = '';
+      diagnosticsBox.className = 'diagnostics clean';
+      diagnosticsBox.innerHTML = 'All good.';
+      renderList();
+      renderTabs();
+      updateStatus();
+    }
+  } else {
+    renderTabs();
+  }
+}
+
 function selectSnippet(id) {
   const s = snippets.find(x => x.id === id);
   if (!s) return;
+
+  if (!openTabs.includes(id)) {
+    openTabs.push(id);
+  }
+
   currentSnippet = { ...s }; // copy for editing
 
   inputId.value = s.id;
@@ -111,6 +204,7 @@ function selectSnippet(id) {
   inputWord.checked = s.constraints?.wordBoundary || false;
 
   renderList();
+  renderTabs();
   updateStatus();
   triggerValidation();
 }
@@ -139,6 +233,7 @@ function handleEdit() {
 
   // update UI optimistically
   renderList();
+  renderTabs();
   updateStatus();
 
   // Debounce validation
@@ -228,8 +323,9 @@ inputSearch.addEventListener('input', renderList);
 btnSave.addEventListener('click', async () => {
   if (!currentSnippet) return;
   const draft = getDraft();
+  const oldId = currentSnippet.id;
   try {
-    const res = await fetch(`${API_BASE}/snippets/${draft.id}`, {
+    const res = await fetch(`${API_BASE}/snippets/${oldId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -237,24 +333,48 @@ btnSave.addEventListener('click', async () => {
       },
       body: JSON.stringify(draft)
     });
+
+    if (!res.ok) {
+      const textData = await res.text();
+      let errorMessage = `Status: ${res.status}`;
+      try {
+        const errorData = JSON.parse(textData);
+        if (errorData.error) errorMessage = errorData.error;
+      } catch (e) {
+        // Fallback to text if JSON parsing fails
+        if (textData) errorMessage = textData;
+      }
+      throw new Error(errorMessage);
+    }
+
     const saved = await res.json();
 
     // Update local cache
-    const idx = snippets.findIndex(s => s.id === draft.id);
+    const idx = snippets.findIndex(s => s.id === oldId);
     if (idx >= 0) {
       snippets[idx] = saved;
     } else {
       snippets.push(saved);
     }
 
+    // if new ID was assigned on save (e.g. from new-123 to stableId), update openTabs
+    if (oldId !== saved.id) {
+      const tabIdx = openTabs.indexOf(oldId);
+      if (tabIdx >= 0) {
+        openTabs[tabIdx] = saved.id;
+      }
+    }
+
     currentSnippet = saved;
     inputId.value = saved.id;
     renderList();
+    renderTabs();
     updateStatus();
     alert('Snippet saved');
   } catch (err) {
     console.error('Save error:', err);
-    alert('Failed to save');
+    const message = err && err.message ? err.message : 'Unknown error';
+    alert(`Failed to save: ${message}`);
   }
 });
 
@@ -295,15 +415,27 @@ btnDelete.addEventListener('click', async () => {
     if (res.ok) {
       const idx = snippets.findIndex(s => s.id === currentSnippet.id);
       if (idx >= 0) snippets.splice(idx, 1);
+
       currentSnippet = null;
+
+      // Clean up stale tabs against actual snippets array
+      openTabs = openTabs.filter(tid => snippets.some(s => s.id === tid));
+
       renderList();
+      renderTabs();
       updateStatus();
-      if (snippets.length > 0) {
+
+      if (openTabs.length > 0) {
+        selectSnippet(openTabs[openTabs.length - 1]);
+      } else if (snippets.length > 0) {
         selectSnippet(snippets[0].id);
       } else {
         inputId.value = '';
         inputTriggers.value = '';
         inputBody.value = '';
+        previewBox.textContent = '';
+        diagnosticsBox.className = 'diagnostics clean';
+        diagnosticsBox.innerHTML = 'All good.';
         updateStatus();
       }
     } else {

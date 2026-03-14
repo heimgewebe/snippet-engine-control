@@ -576,7 +576,7 @@ Benutzerfehler sind reparierbar.
 ---
 
 ### Phase 8 — Workbench-Komfort
-Status: planned
+Status: actively being implemented
 
 #### Ziel
 
@@ -584,10 +584,10 @@ IDE-Reichtum, aber auf stabilem Fundament.
 
 #### Aufgaben
 - [ ] Explorer
-- [ ] Tabs
-- [ ] Search/Filter
+- [x] Tabs
+- [x] Search/Filter
 - [ ] Conflict navigation
-- [ ] Statusbar
+- [x] Statusbar
 - [ ] Command bar
 - [ ] Settings
 
@@ -607,7 +607,7 @@ Mehr Komfort ohne neue Semantikdrift.
 - [x] **PR 5** feat(runtime): verification and minimal apply safety (completed)
 - [x] **PR 6** feat(preview): layered preview pipeline (static & template-aware)
 - [x] **PR 7** feat(history): workspace snapshots and undo/redo (completed)
-- [ ] **PR 8+** feat(ui): workbench comfort and navigation
+- [ ] **PR 8+** feat(ui): workbench comfort and navigation (partial: Tabs, Search/Filter, Statusbar)
 
 ---
 
