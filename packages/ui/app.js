@@ -51,11 +51,16 @@ async function fetchSnippets() {
 
 function updateStatus() {
   if (snippets) {
-    statusRight.textContent = `${snippets.length} snippets`;
+    statusRight.textContent =
+      `${snippets.length} snippet${snippets.length === 1 ? '' : 's'}`;
   }
 
   if (currentSnippet) {
-    statusLeft.textContent = `Selected: ${currentSnippet.id} ${currentSnippet.id.startsWith('new-') ? '(unsaved)' : ''}`;
+    let text = `Selected: ${currentSnippet.id}`;
+    if (currentSnippet.id.startsWith('new-')) {
+      text += ' (unsaved)';
+    }
+    statusLeft.textContent = text;
   } else {
     statusLeft.textContent = `Ready`;
   }

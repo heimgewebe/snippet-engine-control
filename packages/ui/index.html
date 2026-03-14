@@ -231,9 +231,15 @@
     <header>
       <div class="header-top">
         <span>Snippets</span>
-        <button id="btn-new" title="New Snippet">+</button>
+        <button id="btn-new" title="New Snippet" aria-label="New Snippet">+</button>
       </div>
-      <input type="text" id="input-search" class="search-bar" placeholder="Search snippets...">
+      <input
+        type="text"
+        id="input-search"
+        class="search-bar"
+        placeholder="Search snippets..."
+        aria-label="Search snippets"
+      />
     </header>
     <ul id="snippet-list">
       <!-- Populated by JS -->
