@@ -96,16 +96,16 @@ function renderList() {
   // Group snippets by origin.path (or 'Unsaved' / 'Unknown File')
   const groups = new Map();
 
-  filtered.forEach(s => {
-    let groupName = 'Unknown File';
-    if (s.id.startsWith('new-')) {
-      groupName = 'Unsaved';
-    } else if (s.origin && s.origin.path) {
-      // Extract filename from the path
-      const parts = s.origin.path.split(/[/\\]/);
-      groupName = parts[parts.length - 1];
-    }
+  const getExplorerGroupName = (s) => {
+    if (s.id.startsWith('new-')) return 'Unsaved';
+    if (!s.origin || !s.origin.path) return 'Unknown File';
+    if (s.origin.path === 'new') return 'Unknown File';
+    const parts = s.origin.path.split(/[/\\]/);
+    return parts[parts.length - 1];
+  };
 
+  filtered.forEach(s => {
+    const groupName = getExplorerGroupName(s);
     if (!groups.has(groupName)) {
       groups.set(groupName, []);
     }
@@ -114,8 +114,9 @@ function renderList() {
 
   // Render groups
   groups.forEach((groupSnippets, groupName) => {
-    const header = document.createElement('div');
+    const header = document.createElement('li');
     header.className = 'explorer-group-header';
+    header.setAttribute('role', 'presentation');
     header.textContent = groupName;
     listEl.appendChild(header);
 
