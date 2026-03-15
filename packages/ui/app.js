@@ -332,9 +332,63 @@ function renderDiagnostics(diag) {
 
   diagnosticsBox.className = 'diagnostics';
   const ul = document.createElement('ul');
+
+  // Build a dynamic regex matching any known snippet ID
+  // Escape IDs to safely embed them in the regex
+  const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const knownIds = snippets.map(s => escapeRegExp(s.id)).filter(Boolean);
+  const knownIdsSet = new Set(snippets.map(s => s.id));
+
+  let idRegex = null;
+  if (knownIds.length > 0) {
+    // Sort by length descending to match longer IDs first (prevent partial matches)
+    knownIds.sort((a, b) => b.length - a.length);
+    idRegex = new RegExp(`\\b(${knownIds.join('|')})\\b`, 'g');
+  }
+
   issues.forEach(i => {
     const li = document.createElement('li');
-    li.textContent = i;
+
+    if (!idRegex) {
+      li.textContent = i;
+      ul.appendChild(li);
+      return;
+    }
+
+    // Reset regex state for each issue line
+    idRegex.lastIndex = 0;
+
+    // Split text by matching IDs
+    let lastIndex = 0;
+    let match;
+    while ((match = idRegex.exec(i)) !== null) {
+      const textBefore = i.substring(lastIndex, match.index);
+      if (textBefore) {
+        li.appendChild(document.createTextNode(textBefore));
+      }
+
+      const matchedId = match[0];
+      // O(1) membership check
+      if (knownIdsSet.has(matchedId)) {
+        const link = document.createElement('button');
+        link.type = 'button';
+        link.className = 'conflict-link';
+        link.textContent = matchedId;
+        link.addEventListener('click', () => selectSnippet(matchedId));
+        li.appendChild(link);
+      } else {
+        li.appendChild(document.createTextNode(matchedId));
+      }
+
+      lastIndex = idRegex.lastIndex;
+    }
+
+    // Append remaining text
+    const textAfter = i.substring(lastIndex);
+    if (textAfter) {
+      li.appendChild(document.createTextNode(textAfter));
+    }
+
     ul.appendChild(li);
   });
   diagnosticsBox.innerHTML = '';
