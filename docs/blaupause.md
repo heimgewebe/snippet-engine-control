@@ -586,7 +586,7 @@ IDE-Reichtum, aber auf stabilem Fundament.
 - [x] Explorer
 - [x] Tabs
 - [x] Search/Filter
-- [ ] Conflict navigation
+- [~] Conflict navigation
 - [x] Statusbar
 - [ ] Command bar
 - [ ] Settings

@@ -332,9 +332,58 @@ function renderDiagnostics(diag) {
 
   diagnosticsBox.className = 'diagnostics';
   const ul = document.createElement('ul');
+
+  // Build a dynamic regex matching any known snippet ID
+  // Escape IDs to safely embed them in the regex
+  const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const knownIds = snippets.map(s => escapeRegExp(s.id)).filter(Boolean);
+
+  let idRegex = null;
+  if (knownIds.length > 0) {
+    // Sort by length descending to match longer IDs first (prevent partial matches)
+    knownIds.sort((a, b) => b.length - a.length);
+    idRegex = new RegExp(`\\b(${knownIds.join('|')})\\b`, 'g');
+  }
+
   issues.forEach(i => {
     const li = document.createElement('li');
-    li.textContent = i;
+
+    if (!idRegex) {
+      li.textContent = i;
+      ul.appendChild(li);
+      return;
+    }
+
+    // Split text by matching IDs
+    let lastIndex = 0;
+    let match;
+    while ((match = idRegex.exec(i)) !== null) {
+      const textBefore = i.substring(lastIndex, match.index);
+      if (textBefore) {
+        li.appendChild(document.createTextNode(textBefore));
+      }
+
+      const matchedId = match[0];
+      // Only make it a link if the ID actually exists in our snippets array
+      if (snippets.some(s => s.id === matchedId)) {
+        const link = document.createElement('span');
+        link.className = 'conflict-link';
+        link.textContent = matchedId;
+        link.addEventListener('click', () => selectSnippet(matchedId));
+        li.appendChild(link);
+      } else {
+        li.appendChild(document.createTextNode(matchedId));
+      }
+
+      lastIndex = idRegex.lastIndex;
+    }
+
+    // Append remaining text
+    const textAfter = i.substring(lastIndex);
+    if (textAfter) {
+      li.appendChild(document.createTextNode(textAfter));
+    }
+
     ul.appendChild(li);
   });
   diagnosticsBox.innerHTML = '';
