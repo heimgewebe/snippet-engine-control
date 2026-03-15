@@ -583,7 +583,7 @@ Status: actively being implemented
 IDE-Reichtum, aber auf stabilem Fundament.
 
 #### Aufgaben
-- [ ] Explorer
+- [x] Explorer
 - [x] Tabs
 - [x] Search/Filter
 - [ ] Conflict navigation

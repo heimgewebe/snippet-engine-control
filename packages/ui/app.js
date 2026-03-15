@@ -93,26 +93,54 @@ function renderList() {
     return triggers.includes(query) || body.includes(query);
   });
 
+  // Group snippets by origin.path (or 'Unsaved' / 'Unknown File')
+  const groups = new Map();
+
+  const getExplorerGroupName = (s) => {
+    if (s.id.startsWith('new-')) return 'Unsaved';
+    if (!s.origin || !s.origin.path) return 'Unknown File';
+    if (s.origin.path === 'new') return 'Unknown File';
+    const parts = s.origin.path.split(/[/\\]/);
+    return parts[parts.length - 1];
+  };
+
   filtered.forEach(s => {
-    const li = document.createElement('li');
-    li.dataset.id = s.id;
-    if (currentSnippet && currentSnippet.id === s.id) {
-      li.className = 'selected';
+    const groupName = getExplorerGroupName(s);
+    if (!groups.has(groupName)) {
+      groups.set(groupName, []);
     }
+    groups.get(groupName).push(s);
+  });
 
-    const triggerSpan = document.createElement('span');
-    triggerSpan.className = 'trigger';
-    triggerSpan.textContent = s.triggers.join(', ') || 'No trigger';
+  // Render groups
+  groups.forEach((groupSnippets, groupName) => {
+    const header = document.createElement('li');
+    header.className = 'explorer-group-header';
+    header.setAttribute('role', 'presentation');
+    header.textContent = groupName;
+    listEl.appendChild(header);
 
-    const bodySpan = document.createElement('span');
-    bodySpan.className = 'snippet-body-preview';
-    bodySpan.textContent = s.body;
+    groupSnippets.forEach(s => {
+      const li = document.createElement('li');
+      li.dataset.id = s.id;
+      if (currentSnippet && currentSnippet.id === s.id) {
+        li.className = 'selected';
+      }
 
-    li.appendChild(triggerSpan);
-    li.appendChild(bodySpan);
+      const triggerSpan = document.createElement('span');
+      triggerSpan.className = 'trigger';
+      triggerSpan.textContent = s.triggers.join(', ') || 'No trigger';
 
-    li.addEventListener('click', () => selectSnippet(s.id));
-    listEl.appendChild(li);
+      const bodySpan = document.createElement('span');
+      bodySpan.className = 'snippet-body-preview';
+      bodySpan.textContent = s.body;
+
+      li.appendChild(triggerSpan);
+      li.appendChild(bodySpan);
+
+      li.addEventListener('click', () => selectSnippet(s.id));
+      listEl.appendChild(li);
+    });
   });
 }
 
