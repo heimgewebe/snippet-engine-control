@@ -337,6 +337,7 @@ function renderDiagnostics(diag) {
   // Escape IDs to safely embed them in the regex
   const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const knownIds = snippets.map(s => escapeRegExp(s.id)).filter(Boolean);
+  const knownIdsSet = new Set(snippets.map(s => s.id));
 
   let idRegex = null;
   if (knownIds.length > 0) {
@@ -354,6 +355,9 @@ function renderDiagnostics(diag) {
       return;
     }
 
+    // Reset regex state for each issue line
+    idRegex.lastIndex = 0;
+
     // Split text by matching IDs
     let lastIndex = 0;
     let match;
@@ -364,9 +368,10 @@ function renderDiagnostics(diag) {
       }
 
       const matchedId = match[0];
-      // Only make it a link if the ID actually exists in our snippets array
-      if (snippets.some(s => s.id === matchedId)) {
-        const link = document.createElement('span');
+      // O(1) membership check
+      if (knownIdsSet.has(matchedId)) {
+        const link = document.createElement('button');
+        link.type = 'button';
         link.className = 'conflict-link';
         link.textContent = matchedId;
         link.addEventListener('click', () => selectSnippet(matchedId));
