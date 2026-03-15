@@ -30,6 +30,15 @@ const exportContent = document.getElementById('export-plan-content');
 const btnCloseModal = document.getElementById('btn-close-modal');
 const btnCloseModalFooter = document.getElementById('btn-close-modal-footer');
 
+const commandPalette = document.getElementById('command-palette');
+const paletteBackdrop = document.getElementById('palette-backdrop');
+const commandInput = document.getElementById('command-input');
+const commandList = document.getElementById('command-list');
+
+let isPaletteOpen = false;
+let paletteItems = [];
+let selectedPaletteIndex = 0;
+
 async function fetchSnippets() {
   try {
     const res = await fetch(`${API_BASE}/snippets`, {
@@ -546,3 +555,207 @@ btnDryrun.addEventListener('click', async () => {
 
 btnCloseModal.addEventListener('click', () => modalExport.classList.remove('open'));
 btnCloseModalFooter.addEventListener('click', () => modalExport.classList.remove('open'));
+
+// --- Command Palette Logic ---
+
+function getAvailableCommands() {
+  return [
+    {
+      name: 'New Snippet',
+      shortcut: 'Alt+N',
+      action: () => btnNew.click()
+    },
+    {
+      name: 'Save Snippet',
+      shortcut: 'Alt+S',
+      action: () => {
+        if (!btnSave.disabled) btnSave.click();
+      }
+    },
+    {
+      name: 'Delete Snippet',
+      shortcut: '',
+      action: () => {
+        if (!btnDelete.disabled) btnDelete.click();
+      }
+    },
+    {
+      name: 'Dry-run Export (Espanso)',
+      shortcut: '',
+      action: () => btnDryrun.click()
+    }
+  ];
+}
+
+function openPalette() {
+  isPaletteOpen = true;
+  commandPalette.classList.add('open');
+  paletteBackdrop.classList.add('open');
+  commandInput.value = '';
+  renderPalette();
+  commandInput.focus();
+}
+
+function closePalette() {
+  isPaletteOpen = false;
+  commandPalette.classList.remove('open');
+  paletteBackdrop.classList.remove('open');
+  // Return focus to active snippet body if available
+  if (currentSnippet) {
+    inputBody.focus();
+  }
+}
+
+function renderPalette() {
+  const query = commandInput.value.toLowerCase().trim();
+  commandList.innerHTML = '';
+
+  // 1. Gather Commands
+  let commands = getAvailableCommands();
+  if (query) {
+    commands = commands.filter(cmd => cmd.name.toLowerCase().includes(query));
+  }
+
+  // 2. Gather Snippets
+  let filteredSnippets = [];
+  if (query) {
+    filteredSnippets = snippets.filter(s => {
+      const triggers = s.triggers.join(', ').toLowerCase();
+      const body = s.body.toLowerCase();
+      const id = s.id.toLowerCase();
+      return triggers.includes(query) || body.includes(query) || id.includes(query);
+    });
+  } else {
+    // default show recently opened or first few snippets
+    filteredSnippets = snippets.slice(0, 5);
+  }
+
+  paletteItems = [
+    ...commands.map(cmd => ({ type: 'command', item: cmd })),
+    ...filteredSnippets.map(s => ({ type: 'snippet', item: s }))
+  ];
+
+  if (paletteItems.length === 0) {
+    const li = document.createElement('li');
+    li.textContent = 'No results found.';
+    li.style.color = '#6b7280';
+    li.style.cursor = 'default';
+    commandList.appendChild(li);
+    selectedPaletteIndex = -1;
+    return;
+  }
+
+  if (selectedPaletteIndex >= paletteItems.length) {
+    selectedPaletteIndex = 0;
+  }
+  if (selectedPaletteIndex < 0) {
+    selectedPaletteIndex = 0;
+  }
+
+  paletteItems.forEach((entry, idx) => {
+    const li = document.createElement('li');
+    li.setAttribute('role', 'option');
+    if (idx === selectedPaletteIndex) {
+      li.classList.add('active');
+      li.setAttribute('aria-selected', 'true');
+    } else {
+      li.setAttribute('aria-selected', 'false');
+    }
+
+    if (entry.type === 'command') {
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'command-name';
+      nameSpan.textContent = entry.item.name;
+      li.appendChild(nameSpan);
+
+      if (entry.item.shortcut) {
+        const keySpan = document.createElement('span');
+        keySpan.className = 'command-shortcut';
+        keySpan.textContent = entry.item.shortcut;
+        li.appendChild(keySpan);
+      }
+    } else if (entry.type === 'snippet') {
+      const s = entry.item;
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'command-name';
+      const triggersText = s.triggers.length > 0 ? s.triggers.join(', ') : s.id;
+      nameSpan.textContent = `Open: ${triggersText}`;
+      li.appendChild(nameSpan);
+
+      const pathSpan = document.createElement('span');
+      pathSpan.className = 'command-shortcut';
+      pathSpan.textContent = s.origin && s.origin.path ? s.origin.path.split(/[/\\]/).pop() : 'Snippet';
+      li.appendChild(pathSpan);
+    }
+
+    li.addEventListener('click', () => {
+      executePaletteItem(entry);
+    });
+    li.addEventListener('mouseenter', () => {
+      selectedPaletteIndex = idx;
+      renderPalette();
+    });
+
+    commandList.appendChild(li);
+  });
+
+  // scroll to active item
+  const activeLi = commandList.querySelector('li.active');
+  if (activeLi) {
+    activeLi.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+function executePaletteItem(entry) {
+  closePalette();
+  if (entry.type === 'command') {
+    entry.item.action();
+  } else if (entry.type === 'snippet') {
+    selectSnippet(entry.item.id);
+  }
+}
+
+// Event Listeners for Command Palette
+commandInput.addEventListener('input', () => {
+  selectedPaletteIndex = 0;
+  renderPalette();
+});
+
+commandInput.addEventListener('keydown', (e) => {
+  if (paletteItems.length === 0) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    selectedPaletteIndex = (selectedPaletteIndex + 1) % paletteItems.length;
+    renderPalette();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    selectedPaletteIndex = (selectedPaletteIndex - 1 + paletteItems.length) % paletteItems.length;
+    renderPalette();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (selectedPaletteIndex >= 0 && selectedPaletteIndex < paletteItems.length) {
+      executePaletteItem(paletteItems[selectedPaletteIndex]);
+    }
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closePalette();
+  }
+});
+
+paletteBackdrop.addEventListener('click', closePalette);
+
+document.addEventListener('keydown', (e) => {
+  // Cmd+K (Mac) or Ctrl+K (Windows/Linux)
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    if (isPaletteOpen) {
+      closePalette();
+    } else {
+      openPalette();
+    }
+  } else if (e.key === 'Escape' && isPaletteOpen) {
+    e.preventDefault();
+    closePalette();
+  }
+});
