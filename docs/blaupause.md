@@ -538,7 +538,7 @@ Ein fehlgeschlagenes Apply ist erkennbar und begrenzbar.
 ---
 
 ### Phase 6 — Preview ausbauen
-Status: planned
+Status: completed
 
 #### Ziel
 
@@ -547,8 +547,8 @@ Preview entscheidungsrelevant machen.
 #### Ebenen
 - [x] 1. static
 - [x] 2. template-aware
-- [ ] 3. engine-aware
-- [ ] 4. expansion trace
+- [x] 3. engine-aware
+- [x] 4. expansion trace
 
 #### Stop-Kriterium
 
@@ -605,7 +605,7 @@ Mehr Komfort ohne neue Semantikdrift.
 - [x] **PR 3** refactor(app): explicit saveDraft/buildPlan/applyPlan flow
 - [x] **PR 4** build(e2e): prove product flow end-to-end
 - [x] **PR 5** feat(runtime): verification and minimal apply safety (completed)
-- [x] **PR 6** feat(preview): layered preview pipeline (static & template-aware)
+- [x] **PR 6** feat(preview): layered preview pipeline (static, template-aware, engine-aware)
 - [x] **PR 7** feat(history): workspace snapshots and undo/redo (completed)
 - [x] **PR 8+** feat(ui): workbench comfort and navigation (completed)
 

@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { Snippet } from '@snippet-engine-control/core';
-import { readSnippetsFromEspanso } from '@snippet-engine-control/adapter-espanso';
+import { readSnippetsFromEspanso, preview } from '@snippet-engine-control/adapter-espanso';
 import { ValidationService, PreviewService, SnippetStore, DraftService } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
 
@@ -135,7 +135,6 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
   req.on('end', () => {
     try {
       if (req.method === 'GET' && pathname === '/api/snippets') {
-        res.writeHead(200);
         // The UI currently expects a flat array of Snippet IRs
         res.end(JSON.stringify(store.getAll().map(doc => doc.ir)));
       }
@@ -157,7 +156,6 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
         const draftService = new DraftService(store);
         const savedDoc = draftService.saveDraft(draft, existingDoc?.stableId);
 
-        res.writeHead(200);
         // Return flat Snippet IR to the UI for backward compatibility
         res.end(JSON.stringify(savedDoc.ir));
       }
@@ -172,7 +170,6 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
           deleted = store.delete(existingDoc.stableId);
         }
 
-        res.writeHead(200);
         res.end(JSON.stringify({ success: deleted }));
       }
       else if (req.method === 'POST' && pathname === '/api/diagnostics/validate') {
@@ -192,7 +189,6 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
           c.includes(draft.id) || draft.triggers.some((t: string) => c.includes(`'${t}'`))
         );
 
-        res.writeHead(200);
         res.end(JSON.stringify({
           conflicts: relevantConflicts,
           boundaries: diag.ambiguous.filter((b: string) => b.includes(draft.id) || b.includes('new snippet')),
@@ -201,10 +197,10 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
       }
       else if (req.method === 'POST' && pathname === '/api/preview') {
         const draft = JSON.parse(body) as Snippet;
-        const previewService = new PreviewService();
-        const preview = previewService.previewDocument(draft);
+        const previewService = new PreviewService({ preview });
+        const prevResult = previewService.previewDocument(draft);
         res.writeHead(200);
-        res.end(JSON.stringify({ preview }));
+        res.end(JSON.stringify({ preview: prevResult }));
       }
       else if (req.method === 'POST' && pathname === '/api/export/dry-run') {
         try {
@@ -214,7 +210,6 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
             snippets
           );
 
-          res.writeHead(200);
           res.end(JSON.stringify(plan));
         } catch (e: any) {
           res.writeHead(500);
