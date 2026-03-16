@@ -30,6 +30,13 @@ const exportContent = document.getElementById('export-plan-content');
 const btnCloseModal = document.getElementById('btn-close-modal');
 const btnCloseModalFooter = document.getElementById('btn-close-modal-footer');
 
+const modalSettings = document.getElementById('modal-settings');
+const btnSettings = document.getElementById('btn-settings');
+const btnCloseSettings = document.getElementById('btn-close-settings');
+const btnSaveSettings = document.getElementById('btn-save-settings');
+const settingEditorMode = document.getElementById('setting-editor-mode');
+const settingTheme = document.getElementById('setting-theme');
+
 const commandPalette = document.getElementById('command-palette');
 const paletteBackdrop = document.getElementById('palette-backdrop');
 const commandInput = document.getElementById('command-input');
@@ -556,6 +563,58 @@ btnDryrun.addEventListener('click', async () => {
 btnCloseModal.addEventListener('click', () => modalExport.classList.remove('open'));
 btnCloseModalFooter.addEventListener('click', () => modalExport.classList.remove('open'));
 
+// --- Settings Logic ---
+function loadSettings() {
+  const savedSettings = localStorage.getItem('sec_ui_settings');
+  if (savedSettings) {
+    try {
+      const parsed = JSON.parse(savedSettings);
+      if (parsed.editorMode) settingEditorMode.value = parsed.editorMode;
+      if (parsed.theme) settingTheme.value = parsed.theme;
+      applyTheme(parsed.theme);
+    } catch (err) {
+      console.error('Failed to parse settings:', err);
+    }
+  }
+}
+
+function saveSettings() {
+  const newSettings = {
+    editorMode: settingEditorMode.value,
+    theme: settingTheme.value
+  };
+  localStorage.setItem('sec_ui_settings', JSON.stringify(newSettings));
+  applyTheme(newSettings.theme);
+  modalSettings.classList.remove('open');
+}
+
+function applyTheme(theme) {
+  // Rudimentary theme application
+  if (theme === 'dark') {
+    document.body.style.background = '#111827';
+    document.body.style.color = '#f9fafb';
+  } else {
+    document.body.style.background = '';
+    document.body.style.color = '';
+  }
+}
+
+function openSettings() {
+  loadSettings();
+  modalSettings.classList.add('open');
+}
+
+function closeSettings() {
+  modalSettings.classList.remove('open');
+}
+
+btnSettings.addEventListener('click', openSettings);
+btnCloseSettings.addEventListener('click', closeSettings);
+btnSaveSettings.addEventListener('click', saveSettings);
+
+// Load settings on startup
+loadSettings();
+
 // --- Command Palette Logic ---
 
 function getAvailableCommands() {
@@ -583,6 +642,11 @@ function getAvailableCommands() {
       name: 'Dry-run Export (Espanso)',
       shortcut: '',
       action: () => btnDryrun.click()
+    },
+    {
+      name: 'Open Settings',
+      shortcut: '',
+      action: openSettings
     }
   ];
 }
@@ -760,8 +824,8 @@ document.addEventListener('keydown', (e) => {
 
   // Cmd+K (Mac) or Ctrl+K (Windows/Linux)
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-    // Block if Export Modal is open
-    if (modalExport.classList.contains('open')) {
+    // Block if a modal is open
+    if (modalExport.classList.contains('open') || modalSettings.classList.contains('open')) {
       return;
     }
 

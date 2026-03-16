@@ -326,7 +326,7 @@
       display: block;
     }
 
-    /* Modal for Export Plan */
+    /* Modal styles */
     .modal {
       display: none;
       position: fixed;
@@ -363,10 +363,31 @@
       background: #1f2937;
       color: #f3f4f6;
     }
+    .modal-body-light {
+      padding: 16px;
+      overflow-y: auto;
+      background: #fff;
+      color: #111827;
+      font-family: inherit;
+    }
     .modal-footer {
       padding: 16px;
       border-top: 1px solid #e4e4e7;
       text-align: right;
+    }
+    .settings-group {
+      margin-bottom: 16px;
+    }
+    .settings-group label {
+      display: block;
+      margin-bottom: 8px;
+    }
+    .settings-group select, .settings-group input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      box-sizing: border-box;
     }
   </style>
 </head>
@@ -399,6 +420,7 @@
       <button id="btn-save" class="primary">Save</button>
       <button id="btn-delete">Delete</button>
       <div style="flex: 1"></div>
+      <button id="btn-settings" title="Settings" aria-label="Settings">⚙ Settings</button>
       <button id="btn-dryrun">Dry-run Export (Espanso)</button>
     </div>
 
@@ -462,6 +484,37 @@
       </div>
       <div class="modal-footer">
         <button id="btn-close-modal-footer">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="modal-settings" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 style="margin: 0;">Settings</h3>
+        <button id="btn-close-settings">X</button>
+      </div>
+      <div class="modal-body-light" id="settings-content">
+        <div class="settings-group">
+          <label for="setting-editor-mode">Editor Mode</label>
+          <select id="setting-editor-mode">
+            <option value="structured">Structured Mode</option>
+            <option value="raw">Raw Engine Mode</option>
+            <option value="form">Form Mode</option>
+          </select>
+        </div>
+        <div class="settings-group">
+          <label for="setting-theme">Theme</label>
+          <select id="setting-theme">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="system">System Default</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-save-settings" class="primary">Save Settings</button>
       </div>
     </div>
   </div>
