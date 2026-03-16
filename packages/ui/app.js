@@ -592,6 +592,7 @@ function openPalette() {
   commandPalette.classList.add('open');
   paletteBackdrop.classList.add('open');
   commandInput.value = '';
+  selectedPaletteIndex = 0;
   renderPalette();
   commandInput.focus();
 }
