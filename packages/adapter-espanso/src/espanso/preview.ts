@@ -13,19 +13,18 @@ export function preview(snippet: Snippet, ctx: PreviewContext): PreviewResult {
   // Real implementation would parse the Espanso YAML structure or run espanso match
 
   if (expanded.includes('{{clipboard}}')) {
-    const clipboardVal = ctx.clipboardText || '[Mock Clipboard Content]';
+    const clipboardVal = ctx.clipboardText ?? '[Mock Clipboard Content]';
     expanded = expanded.replace(/\{\{clipboard\}\}/g, clipboardVal);
     trace.push(`Expanded {{clipboard}} to "${clipboardVal}"`);
   }
 
   // Date match e.g. {{mydate}}
-  const dateRegex = /\{\{([^}]+date[^}]*)\}\}/i;
-  const dateMatch = expanded.match(dateRegex);
-  if (dateMatch) {
-     const dateVal = ctx.currentDate || new Date().toISOString().split('T')[0];
-     expanded = expanded.replace(dateRegex, dateVal);
-     trace.push(`Expanded date variable {{${dateMatch[1]}}} to "${dateVal}"`);
-  }
+  const dateRegex = /\{\{([^}]+date[^}]*)\}\}/gi;
+  expanded = expanded.replace(dateRegex, (match, varName) => {
+    const dateVal = ctx.currentDate ?? new Date().toISOString().split('T')[0];
+    trace.push(`Expanded date variable {{${varName}}} to "${dateVal}"`);
+    return dateVal;
+  });
 
   // Determine if there are still unresolved templates
   const hasUnresolved = /\{\{.*\}\}/.test(expanded);
