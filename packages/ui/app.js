@@ -545,7 +545,7 @@ btnDelete.addEventListener('click', async () => {
 });
 
 btnDryrun.addEventListener('click', async () => {
-  modalExport.classList.add('open');
+  openModal(modalExport);
   exportContent.textContent = 'Generating plan...';
   try {
     const res = await fetch(`${API_BASE}/export/dry-run`, {
@@ -559,8 +559,61 @@ btnDryrun.addEventListener('click', async () => {
   }
 });
 
-btnCloseModal.addEventListener('click', () => modalExport.classList.remove('open'));
-btnCloseModalFooter.addEventListener('click', () => modalExport.classList.remove('open'));
+btnCloseModal.addEventListener('click', closeModal);
+btnCloseModalFooter.addEventListener('click', closeModal);
+
+
+// --- Shared Modal Logic ---
+let activeModal = null;
+let modalReturnFocus = null;
+let modalFocusTimeout = null;
+
+function openModal(modalEl, options = {}) {
+  if (modalFocusTimeout !== null) {
+    clearTimeout(modalFocusTimeout);
+    modalFocusTimeout = null;
+  }
+
+  modalReturnFocus = document.activeElement;
+  activeModal = modalEl;
+  modalEl.classList.add('open');
+
+  // Focus the first interactive element inside the modal
+  modalFocusTimeout = setTimeout(() => {
+    // Check if the modal was closed during the timeout
+    if (activeModal !== modalEl || !modalEl.classList.contains('open')) {
+      return;
+    }
+
+    const focusable = options.initialFocus || modalEl.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusable && typeof focusable.focus === 'function') {
+      focusable.focus();
+    }
+
+    // Clean up timeout handle after successful execution
+    modalFocusTimeout = null;
+  }, 10);
+}
+
+function closeModal() {
+  if (modalFocusTimeout !== null) {
+    clearTimeout(modalFocusTimeout);
+    modalFocusTimeout = null;
+  }
+
+  if (!activeModal) return;
+  activeModal.classList.remove('open');
+  activeModal = null;
+
+  if (modalReturnFocus && typeof modalReturnFocus.focus === 'function') {
+    modalReturnFocus.focus();
+  }
+  modalReturnFocus = null;
+}
+
+function isAnyModalOpen() {
+  return !!activeModal;
+}
 
 // --- Settings Logic ---
 function loadSettings() {
@@ -584,7 +637,7 @@ function saveSettings() {
   };
   localStorage.setItem('sec_ui_settings', JSON.stringify(newSettings));
   applyTheme(newSettings.theme);
-  modalSettings.classList.remove('open');
+  closeModal();
 }
 
 function applyTheme(theme) {
@@ -603,42 +656,31 @@ function applyTheme(theme) {
   }
 }
 
-let settingsReturnFocus = null;
+
 
 function openSettings() {
-  settingsReturnFocus = document.activeElement;
   loadSettings();
-  modalSettings.classList.add('open');
-  // Focus the first interactive element inside the modal
-  setTimeout(() => {
-    settingTheme.focus();
-  }, 10);
+  openModal(modalSettings, { initialFocus: settingTheme });
 }
 
 function closeSettings() {
-  modalSettings.classList.remove('open');
-  if (settingsReturnFocus && typeof settingsReturnFocus.focus === 'function') {
-    settingsReturnFocus.focus();
-  }
+  closeModal();
 }
 
 btnSettings.addEventListener('click', openSettings);
 btnCloseSettings.addEventListener('click', closeSettings);
 btnSaveSettings.addEventListener('click', saveSettings);
 
-// Close on backdrop click
-modalSettings.addEventListener('click', (e) => {
-  if (e.target === modalSettings) {
-    closeSettings();
-  }
-});
 
-// Close on Escape
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && modalSettings.classList.contains('open')) {
-    e.preventDefault();
-    closeSettings();
-  }
+
+
+
+
+// --- Modal Backdrop & Escape ---
+[modalExport, modalSettings].forEach(m => {
+  m.addEventListener('click', (e) => {
+    if (e.target === m) closeModal();
+  });
 });
 
 // Load settings on startup
@@ -854,7 +896,7 @@ document.addEventListener('keydown', (e) => {
   // Cmd+K (Mac) or Ctrl+K (Windows/Linux)
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
     // Block if a modal is open
-    if (modalExport.classList.contains('open') || modalSettings.classList.contains('open')) {
+    if (isAnyModalOpen()) {
       return;
     }
 
@@ -864,8 +906,13 @@ document.addEventListener('keydown', (e) => {
     } else {
       openPalette();
     }
-  } else if (e.key === 'Escape' && isPaletteOpen) {
-    e.preventDefault();
-    closePalette();
+  } else if (e.key === 'Escape') {
+    if (isAnyModalOpen()) {
+      e.preventDefault();
+      closeModal();
+    } else if (isPaletteOpen) {
+      e.preventDefault();
+      closePalette();
+    }
   }
 });
