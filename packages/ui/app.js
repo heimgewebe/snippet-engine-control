@@ -30,6 +30,12 @@ const exportContent = document.getElementById('export-plan-content');
 const btnCloseModal = document.getElementById('btn-close-modal');
 const btnCloseModalFooter = document.getElementById('btn-close-modal-footer');
 
+const modalSettings = document.getElementById('modal-settings');
+const btnSettings = document.getElementById('btn-settings');
+const btnCloseSettings = document.getElementById('btn-close-settings');
+const btnSaveSettings = document.getElementById('btn-save-settings');
+const settingTheme = document.getElementById('setting-theme');
+
 const commandPalette = document.getElementById('command-palette');
 const paletteBackdrop = document.getElementById('palette-backdrop');
 const commandInput = document.getElementById('command-input');
@@ -556,6 +562,88 @@ btnDryrun.addEventListener('click', async () => {
 btnCloseModal.addEventListener('click', () => modalExport.classList.remove('open'));
 btnCloseModalFooter.addEventListener('click', () => modalExport.classList.remove('open'));
 
+// --- Settings Logic ---
+function loadSettings() {
+  const savedSettings = localStorage.getItem('sec_ui_settings');
+  if (savedSettings) {
+    try {
+      const parsed = JSON.parse(savedSettings);
+      if (parsed.theme) settingTheme.value = parsed.theme;
+      applyTheme(parsed.theme);
+    } catch (err) {
+      console.error('Failed to parse settings:', err);
+    }
+  } else {
+    applyTheme('system');
+  }
+}
+
+function saveSettings() {
+  const newSettings = {
+    theme: settingTheme.value
+  };
+  localStorage.setItem('sec_ui_settings', JSON.stringify(newSettings));
+  applyTheme(newSettings.theme);
+  modalSettings.classList.remove('open');
+}
+
+function applyTheme(theme) {
+  const prefersDark =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  const shouldUseDark =
+    theme === 'dark' || (theme === 'system' && prefersDark);
+
+  if (shouldUseDark) {
+    document.body.classList.add('dark-theme');
+  } else {
+    document.body.classList.remove('dark-theme');
+  }
+}
+
+let settingsReturnFocus = null;
+
+function openSettings() {
+  settingsReturnFocus = document.activeElement;
+  loadSettings();
+  modalSettings.classList.add('open');
+  // Focus the first interactive element inside the modal
+  setTimeout(() => {
+    settingTheme.focus();
+  }, 10);
+}
+
+function closeSettings() {
+  modalSettings.classList.remove('open');
+  if (settingsReturnFocus && typeof settingsReturnFocus.focus === 'function') {
+    settingsReturnFocus.focus();
+  }
+}
+
+btnSettings.addEventListener('click', openSettings);
+btnCloseSettings.addEventListener('click', closeSettings);
+btnSaveSettings.addEventListener('click', saveSettings);
+
+// Close on backdrop click
+modalSettings.addEventListener('click', (e) => {
+  if (e.target === modalSettings) {
+    closeSettings();
+  }
+});
+
+// Close on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modalSettings.classList.contains('open')) {
+    e.preventDefault();
+    closeSettings();
+  }
+});
+
+// Load settings on startup
+loadSettings();
+
 // --- Command Palette Logic ---
 
 function getAvailableCommands() {
@@ -583,6 +671,11 @@ function getAvailableCommands() {
       name: 'Dry-run Export (Espanso)',
       shortcut: '',
       action: () => btnDryrun.click()
+    },
+    {
+      name: 'Open Settings',
+      shortcut: '',
+      action: openSettings
     }
   ];
 }
@@ -760,8 +853,8 @@ document.addEventListener('keydown', (e) => {
 
   // Cmd+K (Mac) or Ctrl+K (Windows/Linux)
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-    // Block if Export Modal is open
-    if (modalExport.classList.contains('open')) {
+    // Block if a modal is open
+    if (modalExport.classList.contains('open') || modalSettings.classList.contains('open')) {
       return;
     }
 
