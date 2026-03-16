@@ -569,8 +569,9 @@ let modalReturnFocus = null;
 let modalFocusTimeout = null;
 
 function openModal(modalEl, options = {}) {
-  if (modalFocusTimeout) {
+  if (modalFocusTimeout !== null) {
     clearTimeout(modalFocusTimeout);
+    modalFocusTimeout = null;
   }
 
   modalReturnFocus = document.activeElement;
@@ -588,11 +589,14 @@ function openModal(modalEl, options = {}) {
     if (focusable && typeof focusable.focus === 'function') {
       focusable.focus();
     }
+
+    // Clean up timeout handle after successful execution
+    modalFocusTimeout = null;
   }, 10);
 }
 
 function closeModal() {
-  if (modalFocusTimeout) {
+  if (modalFocusTimeout !== null) {
     clearTimeout(modalFocusTimeout);
     modalFocusTimeout = null;
   }
