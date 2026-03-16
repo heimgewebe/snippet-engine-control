@@ -566,15 +566,25 @@ btnCloseModalFooter.addEventListener('click', closeModal);
 // --- Shared Modal Logic ---
 let activeModal = null;
 let modalReturnFocus = null;
+let modalFocusTimeout = null;
 
-function openModal(modalEl) {
+function openModal(modalEl, options = {}) {
+  if (modalFocusTimeout) {
+    clearTimeout(modalFocusTimeout);
+  }
+
   modalReturnFocus = document.activeElement;
   activeModal = modalEl;
   modalEl.classList.add('open');
 
   // Focus the first interactive element inside the modal
-  setTimeout(() => {
-    const focusable = modalEl.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  modalFocusTimeout = setTimeout(() => {
+    // Check if the modal was closed during the timeout
+    if (activeModal !== modalEl || !modalEl.classList.contains('open')) {
+      return;
+    }
+
+    const focusable = options.initialFocus || modalEl.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
     if (focusable && typeof focusable.focus === 'function') {
       focusable.focus();
     }
@@ -582,6 +592,11 @@ function openModal(modalEl) {
 }
 
 function closeModal() {
+  if (modalFocusTimeout) {
+    clearTimeout(modalFocusTimeout);
+    modalFocusTimeout = null;
+  }
+
   if (!activeModal) return;
   activeModal.classList.remove('open');
   activeModal = null;
@@ -641,7 +656,7 @@ function applyTheme(theme) {
 
 function openSettings() {
   loadSettings();
-  openModal(modalSettings);
+  openModal(modalSettings, { initialFocus: settingTheme });
 }
 
 function closeSettings() {
