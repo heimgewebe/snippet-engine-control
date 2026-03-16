@@ -562,12 +562,12 @@ function getAvailableCommands() {
   return [
     {
       name: 'New Snippet',
-      shortcut: 'Alt+N',
+      shortcut: '',
       action: () => btnNew.click()
     },
     {
       name: 'Save Snippet',
-      shortcut: 'Alt+S',
+      shortcut: '',
       action: () => {
         if (!btnSave.disabled) btnSave.click();
       }
@@ -692,8 +692,17 @@ function renderPalette() {
       executePaletteItem(entry);
     });
     li.addEventListener('mouseenter', () => {
-      selectedPaletteIndex = idx;
-      renderPalette();
+      // In-place update to prevent re-render flickering
+      if (selectedPaletteIndex !== idx) {
+        const currentActive = commandList.querySelector('li.active');
+        if (currentActive) {
+          currentActive.classList.remove('active');
+          currentActive.setAttribute('aria-selected', 'false');
+        }
+        selectedPaletteIndex = idx;
+        li.classList.add('active');
+        li.setAttribute('aria-selected', 'true');
+      }
     });
 
     commandList.appendChild(li);
@@ -746,8 +755,15 @@ commandInput.addEventListener('keydown', (e) => {
 paletteBackdrop.addEventListener('click', closePalette);
 
 document.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+
   // Cmd+K (Mac) or Ctrl+K (Windows/Linux)
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    // Block if Export Modal is open
+    if (modalExport.classList.contains('open')) {
+      return;
+    }
+
     e.preventDefault();
     if (isPaletteOpen) {
       closePalette();
