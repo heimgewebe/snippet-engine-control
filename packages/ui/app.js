@@ -597,26 +597,49 @@ function applyTheme(theme) {
     theme === 'dark' || (theme === 'system' && prefersDark);
 
   if (shouldUseDark) {
-    document.body.style.background = '#111827';
-    document.body.style.color = '#f9fafb';
+    document.body.classList.add('dark-theme');
   } else {
-    document.body.style.background = '';
-    document.body.style.color = '';
+    document.body.classList.remove('dark-theme');
   }
 }
 
+let settingsReturnFocus = null;
+
 function openSettings() {
+  settingsReturnFocus = document.activeElement;
   loadSettings();
   modalSettings.classList.add('open');
+  // Focus the first interactive element inside the modal
+  setTimeout(() => {
+    settingTheme.focus();
+  }, 10);
 }
 
 function closeSettings() {
   modalSettings.classList.remove('open');
+  if (settingsReturnFocus && typeof settingsReturnFocus.focus === 'function') {
+    settingsReturnFocus.focus();
+  }
 }
 
 btnSettings.addEventListener('click', openSettings);
 btnCloseSettings.addEventListener('click', closeSettings);
 btnSaveSettings.addEventListener('click', saveSettings);
+
+// Close on backdrop click
+modalSettings.addEventListener('click', (e) => {
+  if (e.target === modalSettings) {
+    closeSettings();
+  }
+});
+
+// Close on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modalSettings.classList.contains('open')) {
+    e.preventDefault();
+    closeSettings();
+  }
+});
 
 // Load settings on startup
 loadSettings();

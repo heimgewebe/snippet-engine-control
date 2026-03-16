@@ -389,6 +389,32 @@
       border-radius: 4px;
       box-sizing: border-box;
     }
+
+    /* Dark Theme Core Styles */
+    body.dark-theme {
+      background: #111827;
+      color: #f9fafb;
+    }
+    body.dark-theme .modal-content {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #f9fafb;
+    }
+    body.dark-theme .modal-header {
+      border-bottom: 1px solid #374151;
+    }
+    body.dark-theme .modal-footer {
+      border-top: 1px solid #374151;
+    }
+    body.dark-theme .modal-body-light {
+      background: #374151;
+      color: #f9fafb;
+    }
+    body.dark-theme .settings-group select {
+      background: #1f2937;
+      color: #f9fafb;
+      border: 1px solid #4b5563;
+    }
   </style>
 </head>
 <body>
@@ -490,10 +516,10 @@
 
   <!-- Settings Modal -->
   <div id="modal-settings" class="modal">
-    <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-content" style="max-width: 500px;" role="dialog" aria-labelledby="settings-modal-title" aria-modal="true">
       <div class="modal-header">
-        <h3 style="margin: 0;">Settings</h3>
-        <button id="btn-close-settings">X</button>
+        <h3 id="settings-modal-title" style="margin: 0;">Settings</h3>
+        <button id="btn-close-settings" aria-label="Close Settings">X</button>
       </div>
       <div class="modal-body-light" id="settings-content">
         <div class="settings-group">
