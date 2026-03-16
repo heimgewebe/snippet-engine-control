@@ -34,7 +34,6 @@ const modalSettings = document.getElementById('modal-settings');
 const btnSettings = document.getElementById('btn-settings');
 const btnCloseSettings = document.getElementById('btn-close-settings');
 const btnSaveSettings = document.getElementById('btn-save-settings');
-const settingEditorMode = document.getElementById('setting-editor-mode');
 const settingTheme = document.getElementById('setting-theme');
 
 const commandPalette = document.getElementById('command-palette');
@@ -569,18 +568,18 @@ function loadSettings() {
   if (savedSettings) {
     try {
       const parsed = JSON.parse(savedSettings);
-      if (parsed.editorMode) settingEditorMode.value = parsed.editorMode;
       if (parsed.theme) settingTheme.value = parsed.theme;
       applyTheme(parsed.theme);
     } catch (err) {
       console.error('Failed to parse settings:', err);
     }
+  } else {
+    applyTheme('system');
   }
 }
 
 function saveSettings() {
   const newSettings = {
-    editorMode: settingEditorMode.value,
     theme: settingTheme.value
   };
   localStorage.setItem('sec_ui_settings', JSON.stringify(newSettings));
@@ -589,8 +588,15 @@ function saveSettings() {
 }
 
 function applyTheme(theme) {
-  // Rudimentary theme application
-  if (theme === 'dark') {
+  const prefersDark =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  const shouldUseDark =
+    theme === 'dark' || (theme === 'system' && prefersDark);
+
+  if (shouldUseDark) {
     document.body.style.background = '#111827';
     document.body.style.color = '#f9fafb';
   } else {
