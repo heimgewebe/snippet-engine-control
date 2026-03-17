@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { Snippet } from '@snippet-engine-control/core';
-import { readSnippetsFromEspanso } from '@snippet-engine-control/adapter-espanso';
+import { readSnippetsFromEspanso, preview } from '@snippet-engine-control/adapter-espanso';
 import { ValidationService, PreviewService, SnippetStore, DraftService } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
 
@@ -201,10 +201,10 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
       }
       else if (req.method === 'POST' && pathname === '/api/preview') {
         const draft = JSON.parse(body) as Snippet;
-        const previewService = new PreviewService();
-        const preview = previewService.previewDocument(draft);
+        const previewService = new PreviewService({ preview });
+        const prevResult = previewService.previewDocument(draft);
         res.writeHead(200);
-        res.end(JSON.stringify({ preview }));
+        res.end(JSON.stringify({ preview: prevResult }));
       }
       else if (req.method === 'POST' && pathname === '/api/export/dry-run') {
         try {
