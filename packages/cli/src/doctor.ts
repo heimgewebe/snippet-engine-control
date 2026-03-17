@@ -15,7 +15,8 @@ export function doctor(options: DoctorOptions) {
       console.log(`[Espanso] Message: ${result.message}`);
     }
 
-    if (result.status === 'error') {
+    if (result.status === 'error' || result.status === 'unknown') {
+      console.log(`[Espanso] Health check failed with status: ${result.status}`);
       process.exit(1);
     }
   } else {

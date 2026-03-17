@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { doctor } from '../src/doctor';
-import * as adapter from '@snippet-engine-control/adapter-espanso';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -96,5 +95,19 @@ test('sec doctor', async (t) => {
 
     assert.equal(exitCode, 1);
     assert.ok(logs.some(log => log.includes('[Espanso] Status: error')));
+  });
+
+  await t.test('espanso unknown', (t) => {
+    // If mocking fs is too complex due to ESM/Node limits on read-only exports,
+    // we can rely on a different trick: passing an invalid string that causes an unexpected
+    // error inside the adapter's path processing.
+    // However, the cleanest way without heavy test framework mocking is to use the existing
+    // behaviour where if `discoverDirs` throws (which we can't easily make it do without
+    // process mocking) or if we just test the code branch in doctor().
+
+    // We'll skip forcing an `unknown` from the real adapter here to keep the test simple and robust,
+    // as requested in the instructions "Wenn es einfach mockbar ist ... Wenn das nicht billig geht,
+    // dann lass den Zusatztest weg und ändere nur die Implementierung."
+    t.skip('Skipping unknown mock as it requires complex module mocking');
   });
 });
