@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { Snippet } from '@snippet-engine-control/core';
 import { readSnippetsFromEspanso, preview } from '@snippet-engine-control/adapter-espanso';
-import { ValidationService, PreviewService, WorkspaceService, Workspace } from '@snippet-engine-control/app';
+import { ValidationService, PreviewService, WorkspaceService, Workspace, SnippetDocument } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
 
 // Generate a cryptographically secure random token on startup
@@ -116,6 +116,16 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
   return { server, token: SEC_TOKEN, host, port };
 }
 
+function findDocByLegacyId(workspace: Workspace, legacyId: string): SnippetDocument | undefined {
+  for (const set of workspace.snippetSets) {
+    const doc = set.snippets.find(d => d.ir.id === legacyId);
+    if (doc) {
+      return doc;
+    }
+  }
+  return undefined;
+}
+
 function handleApiRequest(
   req: http.IncomingMessage,
   res: http.ServerResponse,
@@ -154,14 +164,7 @@ function handleApiRequest(
         const draft = JSON.parse(body) as Snippet;
 
         // The UI still operates on IR ids, so we need to translate that to a stableId
-        let existingDoc;
-        for (const set of workspace.snippetSets) {
-          const doc = set.snippets.find(d => d.ir.id === legacyId);
-          if (doc) {
-            existingDoc = doc;
-            break;
-          }
-        }
+        const existingDoc = findDocByLegacyId(workspace, legacyId);
 
         if (!existingDoc && !legacyId.startsWith('new-')) {
           res.writeHead(404);
@@ -169,7 +172,7 @@ function handleApiRequest(
           return;
         }
 
-        let savedDocIr;
+        let savedDocIr: Snippet | undefined;
         if (existingDoc) {
           workspaceService.updateDocument(workspace, existingDoc.stableId, draft);
           // Find the updated doc to get the new IR
@@ -186,6 +189,13 @@ function handleApiRequest(
           savedDocIr = newDoc.ir;
         }
 
+        if (!savedDocIr) {
+          console.error(`Failed to retrieve Snippet IR after updating or inserting legacy id: ${legacyId}`);
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: `Failed to persist snippet '${legacyId}'` }));
+          return;
+        }
+
         res.writeHead(200);
         // Return flat Snippet IR to the UI for backward compatibility
         res.end(JSON.stringify(savedDocIr));
@@ -195,14 +205,7 @@ function handleApiRequest(
         const legacyId = parts[parts.length - 1];
 
         // Find by legacy IR id
-        let existingDoc;
-        for (const set of workspace.snippetSets) {
-          const doc = set.snippets.find(d => d.ir.id === legacyId);
-          if (doc) {
-            existingDoc = doc;
-            break;
-          }
-        }
+        const existingDoc = findDocByLegacyId(workspace, legacyId);
 
         let deleted = false;
         if (existingDoc) {
