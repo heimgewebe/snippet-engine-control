@@ -8,10 +8,12 @@ import * as os from 'os';
 test('sec doctor', async (t) => {
   const originalExit = process.exit;
   const originalLog = console.log;
+  const originalError = console.error;
 
   t.afterEach(() => {
     process.exit = originalExit;
     console.log = originalLog;
+    console.error = originalError;
   });
 
   await t.test('engine not supported', (t) => {
@@ -85,6 +87,11 @@ test('sec doctor', async (t) => {
       logs.push(msg);
     };
 
+    let errorLogs: string[] = [];
+    console.error = (msg: string) => {
+      errorLogs.push(msg);
+    };
+
     try {
       doctor({ engine: 'espanso', dir: tmpFile });
     } catch (e: any) {
@@ -95,19 +102,6 @@ test('sec doctor', async (t) => {
 
     assert.equal(exitCode, 1);
     assert.ok(logs.some(log => log.includes('[Espanso] Status: error')));
-  });
-
-  await t.test('espanso unknown', (t) => {
-    // If mocking fs is too complex due to ESM/Node limits on read-only exports,
-    // we can rely on a different trick: passing an invalid string that causes an unexpected
-    // error inside the adapter's path processing.
-    // However, the cleanest way without heavy test framework mocking is to use the existing
-    // behaviour where if `discoverDirs` throws (which we can't easily make it do without
-    // process mocking) or if we just test the code branch in doctor().
-
-    // We'll skip forcing an `unknown` from the real adapter here to keep the test simple and robust,
-    // as requested in the instructions "Wenn es einfach mockbar ist ... Wenn das nicht billig geht,
-    // dann lass den Zusatztest weg und ändere nur die Implementierung."
-    t.skip('Skipping unknown mock as it requires complex module mocking');
+    assert.ok(errorLogs.some(log => log.includes('[Espanso] Health check failed')));
   });
 });
