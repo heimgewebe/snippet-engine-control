@@ -28,14 +28,17 @@ export function preview(snippet: Snippet, ctx: PreviewContext): PreviewResult {
 
   // Determine if there are still unresolved templates
   const hasUnresolved = /\{\{.*\}\}/.test(expanded);
+  let warnings: string[] | undefined;
+
   if (hasUnresolved) {
-     trace.push('Warning: Unresolved template variables remain.');
+    trace.push('Warning: Unresolved template variables remain.');
+    warnings = ['Contains unresolved template variables after engine expansion.'];
   }
 
   return {
     text: expanded,
     isTemplate: hasUnresolved,
-    warnings: fallback.warnings,
+    warnings,
     trace
   };
 }
