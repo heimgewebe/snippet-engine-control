@@ -5,7 +5,7 @@ export interface DoctorOptions {
   dir?: string;
 }
 
-export function doctor(options: DoctorOptions) {
+export function doctor(options: DoctorOptions = {}) {
   console.log('Running doctor checks...');
 
   if (!options.engine || options.engine === 'espanso') {
