@@ -10,7 +10,9 @@
     "build": "tsc -b -v",
     "test": "npm run test --workspaces --if-present && npm run test:e2e",
     "test:e2e": "npm run build && node --test test-e2e/*.test.js",
-    "typecheck": "tsc -b -v"
+    "typecheck": "tsc -b -v",
+    "doctor:espanso": "node packages/cli/dist/src/index.js doctor --engine espanso --dir \"${ESPANSO_DIR:-$HOME/.config/espanso}\"",
+    "ui": "node packages/cli/dist/src/index.js ui"
   },
   "devDependencies": {
     "typescript": "^5.0.0"

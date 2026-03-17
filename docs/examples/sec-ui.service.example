@@ -1,0 +1,14 @@
+[Unit]
+Description=SEC Snippet Control Local UI Daemon
+After=network.target
+
+[Service]
+Type=simple
+# NOTE: Adapt the path to where your SEC repository is located
+WorkingDirectory=%h/projects/snippet-engine-control
+ExecStart=/usr/bin/npm run ui
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
