@@ -48,7 +48,7 @@ switch (command) {
     rollback({ dir });
     break;
   case 'doctor':
-    doctor();
+    doctor({ engine, dir });
     break;
   case 'lint':
     lint(inputPath);
