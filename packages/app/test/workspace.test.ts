@@ -130,4 +130,51 @@ test('WorkspaceService', async (t) => {
 
     assert.equal(ws.history.redoStack.length, 0, 'redoStack should be cleared after a diverging mutation');
   });
+
+  await t.test('addDocument correctly inserts a snippet into the active SnippetSet', () => {
+    const service = new WorkspaceService({
+      readSnippets: () => [],
+      readSnippetsFromEngine: () => []
+    });
+
+    const ws = service.openWorkspace({ inputPath: 'test' });
+    assert.equal(ws.snippetSets[0].snippets.length, 0);
+
+    const draftSnippet = { id: 'new-123', triggers: ['!new'], body: 'New snippet' };
+    const newDoc = service.addDocument(ws, draftSnippet);
+
+    assert.equal(ws.snippetSets[0].snippets.length, 1);
+    assert.equal(ws.snippetSets[0].snippets[0].stableId, newDoc.stableId);
+    assert.equal(ws.activeDocumentId, newDoc.stableId);
+    assert.equal(newDoc.dirty, true);
+    assert.notEqual(newDoc.revisionId, 'new-123', 'ID should be normalized');
+    assert.equal(newDoc.ir.id, newDoc.revisionId);
+    assert.equal(ws.history.undoStack.length, 1, 'History should be pushed when adding document');
+  });
+
+  await t.test('deleteDocument removes a snippet and resets activeDocumentId', () => {
+    const service = new WorkspaceService({
+      readSnippets: () => [
+        { id: '1', triggers: ['!hello'], body: 'Hello world' }
+      ],
+      readSnippetsFromEngine: () => []
+    });
+
+    const ws = service.openWorkspace({ inputPath: 'test' });
+    assert.equal(ws.snippetSets[0].snippets.length, 1);
+    const doc = ws.snippetSets[0].snippets[0];
+    ws.activeDocumentId = doc.stableId;
+
+    const result = service.deleteDocument(ws, doc.stableId);
+
+    assert.equal(result, true);
+    assert.equal(ws.snippetSets[0].snippets.length, 0);
+    assert.equal(ws.activeDocumentId, undefined);
+    assert.equal(ws.history.undoStack.length, 1, 'History should be pushed when deleting document');
+
+    // Attempt deleting non-existent document
+    const missingResult = service.deleteDocument(ws, 'missing-id');
+    assert.equal(missingResult, false);
+    assert.equal(ws.history.undoStack.length, 1, 'History should not be pushed for failed deletion');
+  });
 });

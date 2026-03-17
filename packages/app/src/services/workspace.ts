@@ -9,7 +9,7 @@ export interface ValidateOptions {
 }
 
 import * as crypto from 'crypto';
-import { Workspace } from '../model/workspace';
+import { Workspace, SnippetDocument } from '../model/workspace';
 import { HistoryService } from './history';
 import { fingerprint } from '@snippet-engine-control/core';
 
@@ -63,6 +63,50 @@ export class WorkspaceService {
 
   public selectDocument(workspace: Workspace, stableId: string): void {
     workspace.activeDocumentId = stableId;
+  }
+
+  public addDocument(workspace: Workspace, draftIr: Snippet): SnippetDocument {
+    if (workspace.snippetSets.length === 0) {
+      throw new Error('Workspace has no snippet sets to add to.');
+    }
+
+    const revisionId = this.calculateRevisionId(draftIr);
+    const normalizedIr = { ...draftIr, id: revisionId };
+
+    const newDoc: SnippetDocument = {
+      stableId: crypto.randomUUID(),
+      revisionId,
+      ir: normalizedIr,
+      dirty: true,
+      derived: {}
+    };
+
+    // Push to history before mutating
+    this.historyService.pushState(workspace);
+
+    // Add to the first set for now, or could be a target set depending on options
+    workspace.snippetSets[0].snippets.push(newDoc);
+    workspace.activeDocumentId = newDoc.stableId;
+
+    return newDoc;
+  }
+
+  public deleteDocument(workspace: Workspace, stableId: string): boolean {
+    for (const set of workspace.snippetSets) {
+      const docIndex = set.snippets.findIndex(d => d.stableId === stableId);
+      if (docIndex !== -1) {
+        // Push to history before mutating
+        this.historyService.pushState(workspace);
+        set.snippets.splice(docIndex, 1);
+
+        // Reset active document if it was the one deleted
+        if (workspace.activeDocumentId === stableId) {
+          workspace.activeDocumentId = undefined;
+        }
+        return true;
+      }
+    }
+    return false; // Document not found
   }
 
   public updateDocument(workspace: Workspace, stableId: string, updatedIr: Snippet): boolean {

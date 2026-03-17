@@ -4,10 +4,8 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { Snippet } from '@snippet-engine-control/core';
 import { readSnippetsFromEspanso, preview } from '@snippet-engine-control/adapter-espanso';
-import { ValidationService, PreviewService, SnippetStore, DraftService } from '@snippet-engine-control/app';
+import { ValidationService, PreviewService, WorkspaceService, Workspace, SnippetDocument } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
-
-const store = new SnippetStore();
 
 // Generate a cryptographically secure random token on startup
 const SEC_TOKEN = crypto.randomBytes(32).toString('hex');
@@ -21,11 +19,15 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     host = '127.0.0.1';
   }
 
-  // Initialize store from Espanso files
-  console.log('Loading snippets from Espanso...');
-  const snippets = readSnippetsFromEspanso(options.dir);
-  store.load(snippets);
-  console.log(`Loaded ${snippets.length} snippets.`);
+  console.log('Initializing workspace from Espanso...');
+  const workspaceService = new WorkspaceService({
+    readSnippets: () => [], // not needed for espanso
+    readSnippetsFromEngine: (dir) => readSnippetsFromEspanso(dir)
+  });
+
+  const workspace = workspaceService.openWorkspace({ engine: 'espanso', dir: options.dir });
+  const snippetCount = workspace.snippetSets.reduce((acc, set) => acc + set.snippets.length, 0);
+  console.log(`Loaded ${snippetCount} snippets into workspace.`);
 
   const uiDir = path.resolve(__dirname, '../../../ui');
 
@@ -50,7 +52,7 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     }
 
     if (req.url && req.url.startsWith('/api/')) {
-      handleApiRequest(req, res, options);
+      handleApiRequest(req, res, options, workspace, workspaceService);
       return;
     }
 
@@ -114,7 +116,23 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
   return { server, token: SEC_TOKEN, host, port };
 }
 
-function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, options: { dir?: string } = {}) {
+function findDocByLegacyId(workspace: Workspace, legacyId: string): SnippetDocument | undefined {
+  for (const set of workspace.snippetSets) {
+    const doc = set.snippets.find(d => d.ir.id === legacyId);
+    if (doc) {
+      return doc;
+    }
+  }
+  return undefined;
+}
+
+function handleApiRequest(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  options: { dir?: string } = {},
+  workspace: Workspace,
+  workspaceService: WorkspaceService
+) {
   const url = new URL(req.url!, `http://${req.headers.host}`);
   const pathname = url.pathname;
   res.setHeader('Content-Type', 'application/json');
@@ -137,7 +155,8 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
       if (req.method === 'GET' && pathname === '/api/snippets') {
         res.writeHead(200);
         // The UI currently expects a flat array of Snippet IRs
-        res.end(JSON.stringify(store.getAll().map(doc => doc.ir)));
+        const allSnippets = workspace.snippetSets.flatMap(set => set.snippets.map(doc => doc.ir));
+        res.end(JSON.stringify(allSnippets));
       }
       else if (req.method === 'PUT' && pathname.startsWith('/api/snippets/')) {
         const parts = pathname.split('/');
@@ -145,7 +164,7 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
         const draft = JSON.parse(body) as Snippet;
 
         // The UI still operates on IR ids, so we need to translate that to a stableId
-        const existingDoc = store.getAll().find(doc => doc.ir.id === legacyId);
+        const existingDoc = findDocByLegacyId(workspace, legacyId);
 
         if (!existingDoc && !legacyId.startsWith('new-')) {
           res.writeHead(404);
@@ -153,23 +172,44 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
           return;
         }
 
-        // Update existing document if found, else insert new (since UI hasn't adopted stableId yet)
-        const draftService = new DraftService(store);
-        const savedDoc = draftService.saveDraft(draft, existingDoc?.stableId);
+        let savedDocIr: Snippet | undefined;
+        if (existingDoc) {
+          workspaceService.updateDocument(workspace, existingDoc.stableId, draft);
+          // Find the updated doc to get the new IR
+          for (const set of workspace.snippetSets) {
+            const updated = set.snippets.find(d => d.stableId === existingDoc.stableId);
+            if (updated) {
+              savedDocIr = updated.ir;
+              break;
+            }
+          }
+        } else {
+          // Insert new (since UI hasn't adopted stableId yet)
+          const newDoc = workspaceService.addDocument(workspace, draft);
+          savedDocIr = newDoc.ir;
+        }
+
+        if (!savedDocIr) {
+          console.error(`Failed to retrieve Snippet IR after updating or inserting legacy id: ${legacyId}`);
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: `Failed to persist snippet '${legacyId}'` }));
+          return;
+        }
 
         res.writeHead(200);
         // Return flat Snippet IR to the UI for backward compatibility
-        res.end(JSON.stringify(savedDoc.ir));
+        res.end(JSON.stringify(savedDocIr));
       }
       else if (req.method === 'DELETE' && pathname.startsWith('/api/snippets/')) {
         const parts = pathname.split('/');
         const legacyId = parts[parts.length - 1];
 
         // Find by legacy IR id
-        const existingDoc = store.getAll().find(doc => doc.ir.id === legacyId);
+        const existingDoc = findDocByLegacyId(workspace, legacyId);
+
         let deleted = false;
         if (existingDoc) {
-          deleted = store.delete(existingDoc.stableId);
+          deleted = workspaceService.deleteDocument(workspace, existingDoc.stableId);
         }
 
         res.writeHead(200);
@@ -180,7 +220,7 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
 
         // Provide the draft as part of the total snippets to validate
         // but replace its old version if it exists
-        const all = store.getAll().map(doc => doc.ir).filter(s => s.id !== draft.id);
+        const all = workspace.snippetSets.flatMap(set => set.snippets.map(doc => doc.ir)).filter(s => s.id !== draft.id);
         all.push(draft);
 
         const validationService = new ValidationService();
@@ -208,7 +248,7 @@ function handleApiRequest(req: http.IncomingMessage, res: http.ServerResponse, o
       }
       else if (req.method === 'POST' && pathname === '/api/export/dry-run') {
         try {
-          const snippets = store.getAll().map(doc => doc.ir);
+          const snippets = workspace.snippetSets.flatMap(set => set.snippets.map(doc => doc.ir));
           const plan = buildExportPlan(
             { engine: 'espanso', dir: options.dir || path.join(process.cwd(), '.espanso') },
             snippets
