@@ -41,8 +41,14 @@ We provide a robust debugging script specifically for the local Engine environme
 npm run doctor:espanso
 ```
 
+`ESPANSO_DIR` can be explicitly set. If unset, `npm run doctor:espanso` uses internal engine discovery.
+
 ### Typical Error Cases:
-- **`Espanso Config Directory not found`**: Ensure espanso is installed and its config directory exists at `~/.config/espanso` or set `ESPANSO_DIR` properly.
+- **`Espanso Config Directory not found`**: Ensure espanso is installed and its config directory exists at the expected path:
+  - Linux: `~/.config/espanso`
+  - macOS: `~/Library/Application Support/espanso`
+  - Windows: `%APPDATA%/espanso`
+  Or explicitly set `ESPANSO_DIR`.
 - **Doctor validation failures (`error` or `unknown` health statuses)**: Often due to permissions, missing base directories or bad configurations. The doctor logs to stderr.
 
 ---

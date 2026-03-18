@@ -5,8 +5,15 @@ echo "============================================================"
 echo " Espanso Local Environment Debugger"
 echo "============================================================"
 
-# Resolve Espanso dir with fallback to default Linux path
-ESPANSO_DIR="${ESPANSO_DIR:-$HOME/.config/espanso}"
+# Resolve Espanso dir with basic OS fallback
+if [ -z "${ESPANSO_DIR:-}" ]; then
+  if [ "$(uname -s)" = "Darwin" ]; then
+    ESPANSO_DIR="$HOME/Library/Application Support/espanso"
+  else
+    ESPANSO_DIR="$HOME/.config/espanso"
+  fi
+fi
+
 MATCH_DIR="$ESPANSO_DIR/match"
 CONFIG_FILE="$ESPANSO_DIR/config/default.yml"
 

@@ -52,11 +52,17 @@ else
 fi
 
 echo -e "\nRunning SEC Doctor..."
-ESPANSO_DIR="${ESPANSO_DIR:-$HOME/.config/espanso}"
-node packages/cli/dist/src/index.js doctor --engine espanso --dir "$ESPANSO_DIR" || {
-  echo "[ERROR] SEC doctor detected issues."
-  exit 1
-}
+if [ -n "${ESPANSO_DIR:-}" ]; then
+  node packages/cli/dist/src/index.js doctor --engine espanso --dir "$ESPANSO_DIR" || {
+    echo "[ERROR] SEC doctor detected issues."
+    exit 1
+  }
+else
+  node packages/cli/dist/src/index.js doctor --engine espanso || {
+    echo "[ERROR] SEC doctor detected issues."
+    exit 1
+  }
+fi
 
 echo -e "\n============================================================"
 echo " Update and Diagnostics complete."
