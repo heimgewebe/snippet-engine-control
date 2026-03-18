@@ -49,7 +49,7 @@ npm run doctor:espanso
 
 ## 3. Starting the UI
 
-To start the local web UI (which orchestrates the canonical SnippetStore and WorkspaceService natively), you must have successfully built the project (`npm run build`).
+To start the local web UI (which serves the workbench UI and backend API), you must have successfully built the project (`npm run build`).
 
 ```bash
 npm run ui

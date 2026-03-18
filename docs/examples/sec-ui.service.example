@@ -4,8 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-# NOTE: Adapt the path to where your SEC repository is located
+# NOTE: Adapt WorkingDirectory to your local repository path, e.g. %h/repos/snippet-engine-control
 WorkingDirectory=%h/projects/snippet-engine-control
+# Environment="ESPANSO_DIR=%h/.config/espanso"
 ExecStart=/usr/bin/npm run ui
 Restart=on-failure
 RestartSec=10

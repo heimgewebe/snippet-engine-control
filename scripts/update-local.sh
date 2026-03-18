@@ -12,6 +12,11 @@ set -euo pipefail
 #   SEC_RUN_TESTS=1    - Set to 1 to run tests after build
 #   ESPANSO_DIR        - Override espanso config path
 
+if [ ! -f package.json ] || [ ! -d packages ]; then
+  echo "[ERROR] Please run this script from the repository root."
+  exit 1
+fi
+
 echo "============================================================"
 echo " SEC Local Rebuild & Diagnose"
 echo "============================================================"
@@ -25,7 +30,11 @@ echo "[1/4] Installing dependencies..."
 npm install
 
 echo "[2/4] Building packages..."
-npm run build
+npm run build || {
+  echo "[ERROR] build failed. Please check the compiler errors above."
+  echo "You may need to clean stale dist/ artifacts or node_modules."
+  exit 1
+}
 
 echo "[3/4] Running tests (if SEC_RUN_TESTS=1)..."
 if [ "${SEC_RUN_TESTS:-0}" = "1" ]; then
