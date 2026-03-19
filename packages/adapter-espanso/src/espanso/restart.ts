@@ -11,8 +11,8 @@ export function restartEspanso(): boolean {
 }
 
 export function logs(opts?: LogOptions): RuntimeLogChunk[] {
+  const now = new Date().toISOString();
   try {
-    const now = new Date().toISOString();
     const createErrorChunk = (message: string): RuntimeLogChunk[] => [{
       timestamp: now,
       level: 'error',
@@ -59,7 +59,7 @@ export function logs(opts?: LogOptions): RuntimeLogChunk[] {
     }));
   } catch (e: any) {
     return [{
-      timestamp: new Date().toISOString(), // Fallback if now wasn't initialized yet
+      timestamp: now,
       level: 'error',
       message: e.message || 'Unknown error while reading espanso logs.'
     }];

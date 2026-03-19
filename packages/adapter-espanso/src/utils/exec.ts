@@ -1,4 +1,4 @@
-import { spawnSync } from 'child_process';
+import cp from 'child_process';
 
 export interface ExecResult {
   ok: boolean;
@@ -14,7 +14,7 @@ export const SPAWN_TIMEOUT_MS = 5000;
 
 export function runCommand(cmd: string, args: string[], timeoutMs: number = SPAWN_TIMEOUT_MS): ExecResult {
   try {
-    const result = spawnSync(cmd, args, { encoding: 'utf8', timeout: timeoutMs });
+    const result = cp.spawnSync(cmd, args, { encoding: 'utf8', timeout: timeoutMs });
 
     const timedOut = result.error && (result.error as any).code === 'ETIMEDOUT';
     const error = result.error ? result.error.message : undefined;
@@ -22,13 +22,13 @@ export function runCommand(cmd: string, args: string[], timeoutMs: number = SPAW
     const ok = !result.error && !result.signal && result.status === 0;
 
     return {
-      ok,
+      ok: Boolean(ok),
       stdout: result.stdout || '',
       stderr: result.stderr || '',
       error,
-      timedOut,
-      signal: result.signal,
-      exitCode: result.status,
+      timedOut: Boolean(timedOut),
+      signal: result.signal || null,
+      exitCode: result.status ?? null,
     };
   } catch (e: any) {
     return {
