@@ -3,8 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { Snippet } from '@snippet-engine-control/core';
-import { readSnippetsFromEspanso, preview } from '@snippet-engine-control/adapter-espanso';
-import { ValidationService, PreviewService, WorkspaceService, Workspace, SnippetDocument } from '@snippet-engine-control/app';
+import { readSnippetsFromEspanso, preview, writeSnippets, createSnapshot, restoreSnapshot, rollbackLatestSnapshot, verify, health, restartEspanso } from '@snippet-engine-control/adapter-espanso';
+import { ValidationService, PreviewService, WorkspaceService, Workspace, SnippetDocument, ApplyService } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
 
 // Generate a cryptographically secure random token on startup
@@ -257,6 +257,47 @@ function handleApiRequest(
           res.writeHead(200);
           res.end(JSON.stringify(plan));
         } catch (e: any) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+      else if (req.method === 'POST' && pathname === '/api/export/apply') {
+        try {
+          const snippets = workspace.snippetSets.flatMap(set => set.snippets.map(doc => doc.ir));
+          const espansoDir = options.dir || path.join(process.cwd(), '.espanso');
+          const plan = buildExportPlan(
+            { engine: 'espanso', dir: espansoDir },
+            snippets
+          );
+
+          const applyService = new ApplyService({
+            writePort: { writeSnippets },
+            snapshotPort: {
+              createSnapshot: () => createSnapshot(espansoDir),
+              restoreSnapshot: (id: string) => restoreSnapshot(id, espansoDir),
+              rollbackLatestSnapshot: () => rollbackLatestSnapshot(espansoDir)
+            },
+            runtimePort: {
+              verify: (p) => verify(p),
+              health: () => health(espansoDir)
+            }
+          });
+
+          const didWrite = applyService.applyPlan(plan, false);
+
+          let restarted = false;
+          if (didWrite) {
+            restarted = restartEspanso();
+          }
+
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: didWrite,
+            writtenFiles: plan.changes.map(c => c.file),
+            restarted
+          }));
+        } catch (e: any) {
+          console.error(e);
           res.writeHead(500);
           res.end(JSON.stringify({ error: e.message }));
         }

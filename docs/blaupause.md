@@ -484,7 +484,7 @@ saveDraft → buildPlan → applyPlan
 - [x] DraftService
 - [x] PlanService
 - [x] Apply-Orchestrierung
-- [x] UI/CLI daran anschließen
+- [x] UI/CLI daran anschließen (Apply Flow jetzt in der UI verfügbar)
 
 #### Stop-Kriterium
 

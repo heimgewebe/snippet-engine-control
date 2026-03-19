@@ -12,6 +12,7 @@ const btnNew = document.getElementById('btn-new');
 const btnSave = document.getElementById('btn-save');
 const btnDelete = document.getElementById('btn-delete');
 const btnDryrun = document.getElementById('btn-dryrun');
+const btnApply = document.getElementById('btn-apply');
 
 const inputId = document.getElementById('input-id');
 const inputTriggers = document.getElementById('input-triggers');
@@ -26,6 +27,7 @@ const statusLeft = document.getElementById('status-left');
 const statusRight = document.getElementById('status-right');
 
 const modalExport = document.getElementById('modal-export');
+const modalExportTitle = document.getElementById('modal-export-title');
 const exportContent = document.getElementById('export-plan-content');
 const btnCloseModal = document.getElementById('btn-close-modal');
 const btnCloseModalFooter = document.getElementById('btn-close-modal-footer');
@@ -546,6 +548,7 @@ btnDelete.addEventListener('click', async () => {
 
 btnDryrun.addEventListener('click', async () => {
   openModal(modalExport);
+  modalExportTitle.textContent = 'Dry-run Export Plan';
   exportContent.textContent = 'Generating plan...';
   try {
     const res = await fetch(`${API_BASE}/export/dry-run`, {
@@ -555,7 +558,36 @@ btnDryrun.addEventListener('click', async () => {
     const plan = await res.json();
     exportContent.textContent = JSON.stringify(plan, null, 2);
   } catch(err) {
-    exportContent.textContent = 'Error generating plan:\n' + err.message;
+    const msg = err && err.message ? err.message : 'Unknown error';
+    exportContent.textContent = 'Error generating plan:\n' + msg;
+  }
+});
+
+btnApply.addEventListener('click', async () => {
+  openModal(modalExport);
+  modalExportTitle.textContent = 'Apply Export Plan';
+  exportContent.textContent = 'Applying plan and writing to Espanso...';
+  try {
+    const res = await fetch(`${API_BASE}/export/apply`, {
+      method: 'POST',
+      headers: { 'X-SEC-Token': window.__SEC_TOKEN__ }
+    });
+    const result = await res.json();
+    if (!res.ok) {
+      exportContent.textContent = 'Error applying plan:\n' + (result.error || 'Unknown error');
+    } else {
+      let output = `Success: ${result.success}\n`;
+      if (result.writtenFiles && result.writtenFiles.length > 0) {
+        output += `Written files:\n  - ${result.writtenFiles.join('\n  - ')}\n`;
+      } else {
+        output += `Written files: None (no changes required)\n`;
+      }
+      output += `Restarted Espanso: ${result.restarted}`;
+      exportContent.textContent = output;
+    }
+  } catch(err) {
+    const msg = err && err.message ? err.message : 'Unknown error';
+    exportContent.textContent = 'Error applying plan:\n' + msg;
   }
 });
 
@@ -713,6 +745,11 @@ function getAvailableCommands() {
       name: 'Dry-run Export (Espanso)',
       shortcut: '',
       action: () => btnDryrun.click()
+    },
+    {
+      name: 'Apply to Espanso',
+      shortcut: '',
+      action: () => btnApply.click()
     },
     {
       name: 'Open Settings',
