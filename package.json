@@ -10,7 +10,9 @@
     "build": "tsc -b -v",
     "test": "npm run test --workspaces --if-present && npm run test:e2e",
     "test:e2e": "npm run build && node --test test-e2e/*.test.js",
-    "typecheck": "tsc -b -v"
+    "typecheck": "tsc -b -v",
+    "doctor:espanso": "node -e \"const { spawnSync } = require('child_process'); const args = ['packages/cli/dist/src/index.js', 'doctor', '--engine', 'espanso']; if (process.env.ESPANSO_DIR) args.push('--dir', process.env.ESPANSO_DIR); const res = spawnSync(process.execPath, args, { stdio: 'inherit' }); process.exit(res.status ?? 1);\"",
+    "ui": "node packages/cli/dist/src/index.js ui"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
