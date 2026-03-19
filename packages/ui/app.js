@@ -576,13 +576,13 @@ btnApply.addEventListener('click', async () => {
     if (!res.ok) {
       exportContent.textContent = 'Error applying plan:\n' + (result.error || 'Unknown error');
     } else {
-      let output = `Success: ${result.success}\n`;
+      let output = `${result.message}\n\n`;
       if (result.writtenFiles && result.writtenFiles.length > 0) {
         output += `Written files:\n  - ${result.writtenFiles.join('\n  - ')}\n`;
-      } else {
-        output += `Written files: None (no changes required)\n`;
+      } else if (!result.changed) {
+        output += `Written files: None\n`;
       }
-      output += `Restarted Espanso: ${result.restarted}`;
+      output += `\nRestarted Espanso: ${result.restarted}`;
       exportContent.textContent = output;
     }
   } catch(err) {

@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { Snippet } from '@snippet-engine-control/core';
-import { readSnippetsFromEspanso, preview, writeSnippets, createSnapshot, restoreSnapshot, rollbackLatestSnapshot, verify, health, restartEspanso } from '@snippet-engine-control/adapter-espanso';
+import { readSnippetsFromEspanso, preview, writeSnippets, createSnapshot, restoreSnapshot, rollbackLatestSnapshot, verify, health, restartEspanso, discoverDirs } from '@snippet-engine-control/adapter-espanso';
 import { ValidationService, PreviewService, WorkspaceService, Workspace, SnippetDocument, ApplyService } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
 
@@ -264,37 +264,72 @@ function handleApiRequest(
       else if (req.method === 'POST' && pathname === '/api/export/apply') {
         try {
           const snippets = workspace.snippetSets.flatMap(set => set.snippets.map(doc => doc.ir));
-          const espansoDir = options.dir || path.join(process.cwd(), '.espanso');
+
+          let espansoDir = options.dir;
+          if (!espansoDir) {
+            const dirs = discoverDirs();
+            if (dirs.length > 0) {
+              espansoDir = dirs[0];
+            }
+          }
+
+          if (!espansoDir) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ error: 'Cannot apply: Espanso configuration directory not found.' }));
+            return;
+          }
+
           const plan = buildExportPlan(
             { engine: 'espanso', dir: espansoDir },
             snippets
           );
 
+          // If no changes, short-circuit
+          if (!plan.changes || plan.changes.length === 0) {
+            res.writeHead(200);
+            res.end(JSON.stringify({
+              success: true,
+              changed: false,
+              writtenFiles: [],
+              restarted: false,
+              message: 'No changes required.'
+            }));
+            return;
+          }
+
           const applyService = new ApplyService({
             writePort: { writeSnippets },
             snapshotPort: {
-              createSnapshot: () => createSnapshot(espansoDir),
-              restoreSnapshot: (id: string) => restoreSnapshot(id, espansoDir),
-              rollbackLatestSnapshot: () => rollbackLatestSnapshot(espansoDir)
+              createSnapshot: () => createSnapshot(espansoDir as string),
+              restoreSnapshot: (id: string) => restoreSnapshot(id, espansoDir as string),
+              rollbackLatestSnapshot: () => rollbackLatestSnapshot(espansoDir as string)
             },
             runtimePort: {
               verify: (p) => verify(p),
-              health: () => health(espansoDir)
+              health: () => health(espansoDir as string)
             }
           });
 
           const didWrite = applyService.applyPlan(plan, false);
 
           let restarted = false;
+          let message = 'Plan applied successfully.';
           if (didWrite) {
             restarted = restartEspanso();
+            if (!restarted) {
+              message = 'Applied, but Espanso restart failed.';
+            } else {
+              message = 'Applied successfully.';
+            }
           }
 
           res.writeHead(200);
           res.end(JSON.stringify({
-            success: didWrite,
-            writtenFiles: plan.changes.map(c => c.file),
-            restarted
+            success: true,
+            changed: didWrite,
+            writtenFiles: plan.changes.filter(c => c.action === 'create' || c.action === 'update' || c.action === 'delete').map(c => c.file),
+            restarted,
+            message
           }));
         } catch (e: any) {
           console.error(e);
