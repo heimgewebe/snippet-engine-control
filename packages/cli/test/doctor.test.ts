@@ -79,9 +79,13 @@ test('sec doctor', async (t) => {
       errorLogs.push(msg);
     };
 
+    let runtimeCalled = false;
     const deps: DoctorDependencies = {
       health: () => ({ status: 'error', message: 'Config missing' }),
-      runDoctor: () => ({ status: 'ok', message: 'Runtime ok' }) // Should not be reached
+      runDoctor: () => {
+        runtimeCalled = true;
+        return { status: 'ok', message: 'Runtime ok' };
+      }
     };
 
     try {
@@ -93,6 +97,7 @@ test('sec doctor', async (t) => {
     assert.equal(exitCode, 1);
     assert.ok(logs.some(log => log.includes('[Espanso Config] Status: error')));
     assert.ok(errorLogs.some(log => log.includes('[Espanso Config] Health check failed')));
+    assert.equal(runtimeCalled, false);
   });
 
   await t.test('runtime error', (t) => {
