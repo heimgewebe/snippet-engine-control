@@ -15,7 +15,7 @@ const defaultDependencies: DoctorDependencies = {
   runDoctor,
 };
 
-export function doctor(options: DoctorOptions = {}, deps: DoctorDependencies = defaultDependencies) {
+export function doctorInternal(options: DoctorOptions = {}, deps: DoctorDependencies = defaultDependencies): number {
   console.log('Running doctor checks...');
 
   if (!options.engine || options.engine === 'espanso') {
@@ -28,7 +28,7 @@ export function doctor(options: DoctorOptions = {}, deps: DoctorDependencies = d
 
     if (configResult.status === 'error' || configResult.status === 'unknown') {
       console.error(`[Espanso Config] Health check failed with status: ${configResult.status}`);
-      process.exit(1);
+      return 1;
     }
 
     // 2. Check actual daemon/runtime health (the 'doctor' step)
@@ -40,12 +40,17 @@ export function doctor(options: DoctorOptions = {}, deps: DoctorDependencies = d
 
     if (runtimeResult.status === 'error' || runtimeResult.status === 'unknown') {
       console.error(`[Espanso Runtime] Health check failed with status: ${runtimeResult.status}`);
-      process.exit(1);
+      return 1;
     }
 
   } else {
     console.log(`[${options.engine}] Health check not supported for this engine.`);
   }
 
-  process.exit(0);
+  return 0;
+}
+
+export function doctor(options: DoctorOptions = {}, deps: DoctorDependencies = defaultDependencies) {
+  const code = doctorInternal(options, deps);
+  process.exit(code);
 }
