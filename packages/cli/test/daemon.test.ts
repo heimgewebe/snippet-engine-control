@@ -175,7 +175,7 @@ test('Daemon Security - Token and Origin validation', async (t) => {
     assert.equal(fs.existsSync(targetFile), true, 'sec.generated.yml should exist after apply');
   });
 
-  await t.test('POST /api/export/apply a second time yields no changes', async () => {
+  await t.test('POST /api/export/apply succeeds on repeated invocation', async () => {
     const applyRes = await request('/api/export/apply', {
       method: 'POST',
       headers: {
@@ -188,13 +188,5 @@ test('Daemon Security - Token and Origin validation', async (t) => {
 
     const body = JSON.parse(applyRes.data);
     assert.equal(body.success, true);
-
-    // The previous apply call wrote the files to `tempEspansoDir`.
-    // `buildExportPlan` compares the workspace state against the engine state (which is empty if it doesn't read the newly written files during the API call).
-    // `buildExportPlan` takes `sourceSnippets`. In `app/src/services/plan.ts`, it reads existing files using `readSnippetsFromEngine`.
-    // Since `applyPlan` writes them, the second time around, `existingContent` should match, yielding `update` with same hashes, resulting in a no-op *IF* `readSnippetsFromEngine` reads it properly.
-    // However, in the daemon tests, the `workspaceService` is initialized to return `[]` from engine for espanso, or we might be running into `applyService` returning true anyway if plan has changes.
-    // For the sake of the test, we'll just check that it succeeds. Testing the precise diffing engine logic is done in plan.test.ts.
-    // We will just verify it responds 200.
   });
 });
