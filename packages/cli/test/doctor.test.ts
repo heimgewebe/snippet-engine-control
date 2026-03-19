@@ -1,47 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { doctor, DoctorDependencies } from '../src/doctor';
+import { doctorInternal, DoctorDependencies } from '../src/doctor.js';
 
 test('sec doctor', async (t) => {
-  const originalExit = process.exit;
   const originalLog = console.log;
   const originalError = console.error;
 
   t.afterEach(() => {
-    process.exit = originalExit;
     console.log = originalLog;
     console.error = originalError;
   });
 
   await t.test('engine not supported', (t) => {
-    let exitCode: number | undefined;
-    process.exit = ((code: number) => {
-      exitCode = code;
-      throw new Error(`process.exit(${code})`);
-    }) as any;
-
     let logs: string[] = [];
     console.log = (msg: string) => {
       logs.push(msg);
     };
 
-    try {
-      doctor({ engine: 'unknown-engine' });
-    } catch (e: any) {
-      if (!e.message.startsWith('process.exit')) throw e;
-    }
+    const exitCode = doctorInternal({ engine: 'unknown-engine' });
 
     assert.equal(exitCode, 0);
     assert.ok(logs.some(log => log.includes('[unknown-engine] Health check not supported')));
   });
 
   await t.test('espanso success', (t) => {
-    let exitCode: number | undefined;
-    process.exit = ((code: number) => {
-      exitCode = code;
-      throw new Error(`process.exit(${code})`);
-    }) as any;
-
     let logs: string[] = [];
     console.log = (msg: string) => {
       logs.push(msg);
@@ -52,11 +34,7 @@ test('sec doctor', async (t) => {
       runDoctor: () => ({ status: 'ok', message: 'Runtime ok' })
     };
 
-    try {
-      doctor({ engine: 'espanso' }, deps);
-    } catch (e: any) {
-      if (!e.message.startsWith('process.exit')) throw e;
-    }
+    const exitCode = doctorInternal({ engine: 'espanso' }, deps);
 
     assert.equal(exitCode, 0);
     assert.ok(logs.some(log => log.includes('[Espanso Config] Status: ok')));
@@ -64,12 +42,6 @@ test('sec doctor', async (t) => {
   });
 
   await t.test('config error', (t) => {
-    let exitCode: number | undefined;
-    process.exit = ((code: number) => {
-      exitCode = code;
-      throw new Error(`process.exit(${code})`);
-    }) as any;
-
     let logs: string[] = [];
     console.log = (msg: string) => {
       logs.push(msg);
@@ -88,11 +60,7 @@ test('sec doctor', async (t) => {
       }
     };
 
-    try {
-      doctor({ engine: 'espanso' }, deps);
-    } catch (e: any) {
-      if (!e.message.startsWith('process.exit')) throw e;
-    }
+    const exitCode = doctorInternal({ engine: 'espanso' }, deps);
 
     assert.equal(exitCode, 1);
     assert.ok(logs.some(log => log.includes('[Espanso Config] Status: error')));
@@ -101,12 +69,6 @@ test('sec doctor', async (t) => {
   });
 
   await t.test('runtime error', (t) => {
-    let exitCode: number | undefined;
-    process.exit = ((code: number) => {
-      exitCode = code;
-      throw new Error(`process.exit(${code})`);
-    }) as any;
-
     let logs: string[] = [];
     console.log = (msg: string) => {
       logs.push(msg);
@@ -121,11 +83,7 @@ test('sec doctor', async (t) => {
       runDoctor: () => ({ status: 'error', message: 'Runtime failed' })
     };
 
-    try {
-      doctor({ engine: 'espanso' }, deps);
-    } catch (e: any) {
-      if (!e.message.startsWith('process.exit')) throw e;
-    }
+    const exitCode = doctorInternal({ engine: 'espanso' }, deps);
 
     assert.equal(exitCode, 1);
     assert.ok(logs.some(log => log.includes('[Espanso Config] Status: ok')));
@@ -134,12 +92,6 @@ test('sec doctor', async (t) => {
   });
 
   await t.test('runtime degraded', (t) => {
-    let exitCode: number | undefined;
-    process.exit = ((code: number) => {
-      exitCode = code;
-      throw new Error(`process.exit(${code})`);
-    }) as any;
-
     let logs: string[] = [];
     console.log = (msg: string) => {
       logs.push(msg);
@@ -154,11 +106,7 @@ test('sec doctor', async (t) => {
       runDoctor: () => ({ status: 'degraded', message: 'Wayland warning' })
     };
 
-    try {
-      doctor({ engine: 'espanso' }, deps);
-    } catch (e: any) {
-      if (!e.message.startsWith('process.exit')) throw e;
-    }
+    const exitCode = doctorInternal({ engine: 'espanso' }, deps);
 
     // degraded should exit 0
     assert.equal(exitCode, 0);
