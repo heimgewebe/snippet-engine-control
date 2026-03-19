@@ -5,12 +5,22 @@ export interface DoctorOptions {
   dir?: string;
 }
 
-export function doctor(options: DoctorOptions = {}) {
+export interface DoctorDependencies {
+  health: typeof health;
+  runDoctor: typeof runDoctor;
+}
+
+const defaultDependencies: DoctorDependencies = {
+  health,
+  runDoctor,
+};
+
+export function doctor(options: DoctorOptions = {}, deps: DoctorDependencies = defaultDependencies) {
   console.log('Running doctor checks...');
 
   if (!options.engine || options.engine === 'espanso') {
     // 1. Check configuration structure
-    const configResult = health(options.dir);
+    const configResult = deps.health(options.dir);
     console.log(`[Espanso Config] Status: ${configResult.status}`);
     if (configResult.message) {
       console.log(`[Espanso Config] Message: ${configResult.message}`);
@@ -22,7 +32,7 @@ export function doctor(options: DoctorOptions = {}) {
     }
 
     // 2. Check actual daemon/runtime health (the 'doctor' step)
-    const runtimeResult = runDoctor();
+    const runtimeResult = deps.runDoctor();
     console.log(`[Espanso Runtime] Status: ${runtimeResult.status}`);
     if (runtimeResult.message) {
       console.log(`[Espanso Runtime] Message: ${runtimeResult.message}`);
