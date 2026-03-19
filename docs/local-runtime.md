@@ -65,8 +65,8 @@ This starts a local daemon on port 4000. Open `http://localhost:4000` in your br
 
 In the UI, you have three distinct actions for your snippets:
 * **Save**: Saves the snippet internally within the SEC workspace.
-* **Dry-run Export**: Shows a preview (the export plan) of what will be written to Espanso.
-* **Apply to Espanso**: Writes the export plan directly to `~/.config/espanso/match/sec.generated.yml` (or your OS equivalent) and automatically attempts to reload Espanso.
+* **Dry-run Export**: Shows the export plan against the configured or discovered Espanso target directory.
+* **Apply to Espanso**: Writes the export plan to that Espanso target directory and attempts to reload Espanso.
 
 ---
 

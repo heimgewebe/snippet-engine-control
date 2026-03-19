@@ -137,6 +137,15 @@ function handleApiRequest(
   const pathname = url.pathname;
   res.setHeader('Content-Type', 'application/json');
 
+  // Centralize effective Espanso directory resolution
+  let effectiveEspansoDir = options.dir;
+  if (!effectiveEspansoDir) {
+    const dirs = discoverDirs();
+    if (dirs.length > 0) {
+      effectiveEspansoDir = dirs[0];
+    }
+  }
+
   // Validate Token for ALL API methods (prevents XS-Leaks for GET)
   const providedToken = req.headers['x-sec-token'];
   if (!providedToken || providedToken !== SEC_TOKEN) {
@@ -248,9 +257,15 @@ function handleApiRequest(
       }
       else if (req.method === 'POST' && pathname === '/api/export/dry-run') {
         try {
+          if (!effectiveEspansoDir) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ error: 'Cannot dry-run: Espanso configuration directory not found.' }));
+            return;
+          }
+
           const snippets = workspace.snippetSets.flatMap(set => set.snippets.map(doc => doc.ir));
           const plan = buildExportPlan(
-            { engine: 'espanso', dir: options.dir || path.join(process.cwd(), '.espanso') },
+            { engine: 'espanso', dir: effectiveEspansoDir },
             snippets
           );
 
@@ -263,24 +278,16 @@ function handleApiRequest(
       }
       else if (req.method === 'POST' && pathname === '/api/export/apply') {
         try {
-          const snippets = workspace.snippetSets.flatMap(set => set.snippets.map(doc => doc.ir));
-
-          let espansoDir = options.dir;
-          if (!espansoDir) {
-            const dirs = discoverDirs();
-            if (dirs.length > 0) {
-              espansoDir = dirs[0];
-            }
-          }
-
-          if (!espansoDir) {
+          if (!effectiveEspansoDir) {
             res.writeHead(500);
             res.end(JSON.stringify({ error: 'Cannot apply: Espanso configuration directory not found.' }));
             return;
           }
 
+          const snippets = workspace.snippetSets.flatMap(set => set.snippets.map(doc => doc.ir));
+
           const plan = buildExportPlan(
-            { engine: 'espanso', dir: espansoDir },
+            { engine: 'espanso', dir: effectiveEspansoDir },
             snippets
           );
 
@@ -300,13 +307,13 @@ function handleApiRequest(
           const applyService = new ApplyService({
             writePort: { writeSnippets },
             snapshotPort: {
-              createSnapshot: () => createSnapshot(espansoDir as string),
-              restoreSnapshot: (id: string) => restoreSnapshot(id, espansoDir as string),
-              rollbackLatestSnapshot: () => rollbackLatestSnapshot(espansoDir as string)
+              createSnapshot: () => createSnapshot(effectiveEspansoDir as string),
+              restoreSnapshot: (id: string) => restoreSnapshot(id, effectiveEspansoDir as string),
+              rollbackLatestSnapshot: () => rollbackLatestSnapshot(effectiveEspansoDir as string)
             },
             runtimePort: {
               verify: (p) => verify(p),
-              health: () => health(espansoDir as string)
+              health: () => health(effectiveEspansoDir as string)
             }
           });
 
