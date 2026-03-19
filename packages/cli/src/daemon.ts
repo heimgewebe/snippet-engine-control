@@ -19,13 +19,22 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     host = '127.0.0.1';
   }
 
+  // Centralize effective Espanso directory resolution once on startup
+  let effectiveEspansoDir = options.dir;
+  if (!effectiveEspansoDir) {
+    const dirs = discoverDirs();
+    if (dirs.length > 0) {
+      effectiveEspansoDir = dirs[0];
+    }
+  }
+
   console.log('Initializing workspace from Espanso...');
   const workspaceService = new WorkspaceService({
     readSnippets: () => [], // not needed for espanso
     readSnippetsFromEngine: (dir) => readSnippetsFromEspanso(dir)
   });
 
-  const workspace = workspaceService.openWorkspace({ engine: 'espanso', dir: options.dir });
+  const workspace = workspaceService.openWorkspace({ engine: 'espanso', dir: effectiveEspansoDir });
   const snippetCount = workspace.snippetSets.reduce((acc, set) => acc + set.snippets.length, 0);
   console.log(`Loaded ${snippetCount} snippets into workspace.`);
 
@@ -52,7 +61,7 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     }
 
     if (req.url && req.url.startsWith('/api/')) {
-      handleApiRequest(req, res, options, workspace, workspaceService);
+      handleApiRequest(req, res, { ...options, dir: effectiveEspansoDir }, workspace, workspaceService);
       return;
     }
 
@@ -137,14 +146,7 @@ function handleApiRequest(
   const pathname = url.pathname;
   res.setHeader('Content-Type', 'application/json');
 
-  // Centralize effective Espanso directory resolution
-  let effectiveEspansoDir = options.dir;
-  if (!effectiveEspansoDir) {
-    const dirs = discoverDirs();
-    if (dirs.length > 0) {
-      effectiveEspansoDir = dirs[0];
-    }
-  }
+  const effectiveEspansoDir = options.dir;
 
   // Validate Token for ALL API methods (prevents XS-Leaks for GET)
   const providedToken = req.headers['x-sec-token'];
