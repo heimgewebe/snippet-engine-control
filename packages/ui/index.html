@@ -392,29 +392,62 @@
 
     /* Dark Theme Core Styles */
     body.dark-theme {
-      background: #111827;
-      color: #f9fafb;
+      --bg-main: #111827;
+      --bg-surface: #1f2937;
+      --bg-highlight: #374151;
+      --border-color: #374151;
+      --border-focus: #4b5563;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --text-success: #34d399;
+      --accent: #4f46e5;
+
+      background: var(--bg-main);
+      color: var(--text-main);
     }
     body.dark-theme .modal-content {
-      background: #1f2937;
-      border: 1px solid #374151;
-      color: #f9fafb;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
     }
     body.dark-theme .modal-header {
-      border-bottom: 1px solid #374151;
+      border-bottom: 1px solid var(--border-color);
     }
     body.dark-theme .modal-footer {
-      border-top: 1px solid #374151;
+      border-top: 1px solid var(--border-color);
     }
     body.dark-theme .modal-body-light {
-      background: #374151;
-      color: #f9fafb;
+      background: var(--bg-highlight);
+      color: var(--text-main);
     }
     body.dark-theme .settings-group select {
-      background: #1f2937;
-      color: #f9fafb;
-      border: 1px solid #4b5563;
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border-focus);
     }
+    body.dark-theme input, body.dark-theme textarea, body.dark-theme .search-bar { background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border-color); }
+    body.dark-theme .preview-box { background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); }
+    body.dark-theme .toolbar, body.dark-theme aside, body.dark-theme .side-pane { background: var(--bg-main); border-color: var(--border-color); }
+    body.dark-theme aside header, body.dark-theme .panel-section { border-bottom: 1px solid var(--border-color); }
+    body.dark-theme .panel-section h3, body.dark-theme label, body.dark-theme .trigger, body.dark-theme .tab { color: var(--text-main); }
+    body.dark-theme button { background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border-color); }
+    body.dark-theme button:hover { background: var(--bg-highlight); }
+    body.dark-theme button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    body.dark-theme #input-id { background: var(--bg-highlight) !important; color: var(--text-muted); }
+    body.dark-theme .diagnostics.clean { color: var(--text-success); }
+    body.dark-theme .tab-bar { background: var(--bg-main); border-bottom: 1px solid var(--border-color); }
+    body.dark-theme .tab { background: var(--bg-surface); border-right: 1px solid var(--border-color); }
+    body.dark-theme .tab.active { background: var(--bg-main); border-bottom: 1px solid var(--bg-main); color: var(--text-main); }
+    body.dark-theme aside li { border-bottom: 1px solid var(--border-color); }
+    body.dark-theme aside li:hover { background: var(--bg-surface); }
+    body.dark-theme aside li.selected { background: var(--bg-highlight); border-left: 3px solid var(--accent); }
+    body.dark-theme .explorer-group-header { background: var(--bg-surface); color: var(--text-muted); border-bottom: 1px solid var(--border-color); }
+    body.dark-theme .command-palette { background: var(--bg-surface); color: var(--text-main); }
+    body.dark-theme .command-input { color: var(--text-main); border-bottom: 1px solid var(--border-color); }
+    body.dark-theme .command-list li { border-bottom: 1px solid var(--border-color); }
+    body.dark-theme .command-list li:hover, body.dark-theme .command-list li.active { background: var(--bg-highlight); }
+    body.dark-theme .command-name { color: var(--text-main); }
+    body.dark-theme .command-shortcut { background: var(--bg-highlight); color: #d1d5db; border: 1px solid var(--border-focus); }
   </style>
 </head>
 <body>
