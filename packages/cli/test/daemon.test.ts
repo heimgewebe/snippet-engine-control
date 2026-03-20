@@ -105,6 +105,19 @@ test('Daemon Security - Token and Origin validation', async (t) => {
     assert.match(res.data, /"body":"im new"/);
   });
 
+  await t.test('PUT /api/snippets/new-wb creates a new snippet with wordBoundary: true', async () => {
+    const res = await request('/api/snippets/new-wb', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SEC-Token': token
+      }
+    }, JSON.stringify({ triggers: [':newwb'], body: "word boundary test", constraints: { wordBoundary: true } }));
+
+    assert.equal(res.statusCode, 200);
+    assert.match(res.data, /"wordBoundary":true/);
+  });
+
   await t.test('PUT /api/snippets/missing-id fails with 404', async () => {
     const res = await request('/api/snippets/missing-id', {
       method: 'PUT',

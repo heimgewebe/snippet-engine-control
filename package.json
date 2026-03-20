@@ -15,7 +15,6 @@
     "ui": "node packages/cli/dist/src/index.js ui"
   },
   "devDependencies": {
-    "playwright": "^1.58.2",
     "typescript": "^5.0.0"
   },
   "engines": {
