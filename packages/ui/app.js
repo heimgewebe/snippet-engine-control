@@ -477,15 +477,19 @@ btnSave.addEventListener('click', async () => {
   }
 });
 
-btnNew.addEventListener('click', () => {
-  const newId = 'new-' + Date.now();
-  const s = {
-    id: newId,
+function createDefaultSnippet(id = 'new-' + Date.now()) {
+  return {
+    id,
     triggers: [':new'],
     body: 'new snippet',
     origin: { source: 'espanso', path: 'new' },
     constraints: { wordBoundary: true }
   };
+}
+
+btnNew.addEventListener('click', () => {
+  const newId = 'new-' + Date.now();
+  const s = createDefaultSnippet(newId);
   snippets.unshift(s);
   selectSnippet(newId);
 });

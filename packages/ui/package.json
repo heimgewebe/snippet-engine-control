@@ -2,5 +2,8 @@
   "name": "@snippet-engine-control/ui",
   "version": "0.1.0",
   "description": "Web UI for snippet-engine-control (Phase 2)",
-  "private": true
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
 }
