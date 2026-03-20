@@ -3,8 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { Snippet } from '@snippet-engine-control/core';
-import { readSnippetsFromEspanso, preview } from '@snippet-engine-control/adapter-espanso';
-import { ValidationService, PreviewService, WorkspaceService, Workspace, SnippetDocument } from '@snippet-engine-control/app';
+import { readSnippetsFromEspanso, preview, writeSnippets, createSnapshot, restoreSnapshot, rollbackLatestSnapshot, verify, health, restartEspanso, discoverDirs } from '@snippet-engine-control/adapter-espanso';
+import { ValidationService, PreviewService, WorkspaceService, Workspace, SnippetDocument, ApplyService } from '@snippet-engine-control/app';
 import { buildExportPlan } from './plan';
 
 // Generate a cryptographically secure random token on startup
@@ -19,13 +19,22 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     host = '127.0.0.1';
   }
 
+  // Centralize effective Espanso directory resolution once on startup
+  let effectiveEspansoDir = options.dir;
+  if (!effectiveEspansoDir) {
+    const dirs = discoverDirs();
+    if (dirs.length > 0) {
+      effectiveEspansoDir = dirs[0];
+    }
+  }
+
   console.log('Initializing workspace from Espanso...');
   const workspaceService = new WorkspaceService({
     readSnippets: () => [], // not needed for espanso
     readSnippetsFromEngine: (dir) => readSnippetsFromEspanso(dir)
   });
 
-  const workspace = workspaceService.openWorkspace({ engine: 'espanso', dir: options.dir });
+  const workspace = workspaceService.openWorkspace({ engine: 'espanso', dir: effectiveEspansoDir });
   const snippetCount = workspace.snippetSets.reduce((acc, set) => acc + set.snippets.length, 0);
   console.log(`Loaded ${snippetCount} snippets into workspace.`);
 
@@ -52,7 +61,7 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     }
 
     if (req.url && req.url.startsWith('/api/')) {
-      handleApiRequest(req, res, options, workspace, workspaceService);
+      handleApiRequest(req, res, { ...options, dir: effectiveEspansoDir }, workspace, workspaceService);
       return;
     }
 
@@ -136,6 +145,8 @@ function handleApiRequest(
   const url = new URL(req.url!, `http://${req.headers.host}`);
   const pathname = url.pathname;
   res.setHeader('Content-Type', 'application/json');
+
+  const effectiveEspansoDir = options.dir;
 
   // Validate Token for ALL API methods (prevents XS-Leaks for GET)
   const providedToken = req.headers['x-sec-token'];
@@ -248,15 +259,89 @@ function handleApiRequest(
       }
       else if (req.method === 'POST' && pathname === '/api/export/dry-run') {
         try {
+          if (!effectiveEspansoDir) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ error: 'Cannot dry-run: Espanso configuration directory not found.' }));
+            return;
+          }
+
           const snippets = workspace.snippetSets.flatMap(set => set.snippets.map(doc => doc.ir));
           const plan = buildExportPlan(
-            { engine: 'espanso', dir: options.dir || path.join(process.cwd(), '.espanso') },
+            { engine: 'espanso', dir: effectiveEspansoDir },
             snippets
           );
 
           res.writeHead(200);
           res.end(JSON.stringify(plan));
         } catch (e: any) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      }
+      else if (req.method === 'POST' && pathname === '/api/export/apply') {
+        try {
+          if (!effectiveEspansoDir) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ error: 'Cannot apply: Espanso configuration directory not found.' }));
+            return;
+          }
+
+          const snippets = workspace.snippetSets.flatMap(set => set.snippets.map(doc => doc.ir));
+
+          const plan = buildExportPlan(
+            { engine: 'espanso', dir: effectiveEspansoDir },
+            snippets
+          );
+
+          // If no changes, short-circuit
+          if (!plan.changes || plan.changes.length === 0) {
+            res.writeHead(200);
+            res.end(JSON.stringify({
+              success: true,
+              changed: false,
+              writtenFiles: [],
+              restarted: false,
+              message: 'No changes required.'
+            }));
+            return;
+          }
+
+          const applyService = new ApplyService({
+            writePort: { writeSnippets },
+            snapshotPort: {
+              createSnapshot: () => createSnapshot(effectiveEspansoDir as string),
+              restoreSnapshot: (id: string) => restoreSnapshot(id, effectiveEspansoDir as string),
+              rollbackLatestSnapshot: () => rollbackLatestSnapshot(effectiveEspansoDir as string)
+            },
+            runtimePort: {
+              verify: (p) => verify(p),
+              health: () => health(effectiveEspansoDir as string)
+            }
+          });
+
+          const didWrite = applyService.applyPlan(plan, false);
+
+          let restarted = false;
+          let message = 'Plan applied successfully.';
+          if (didWrite) {
+            restarted = restartEspanso();
+            if (!restarted) {
+              message = 'Applied, but Espanso restart failed.';
+            } else {
+              message = 'Applied successfully.';
+            }
+          }
+
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            changed: didWrite,
+            writtenFiles: plan.changes.filter(c => c.action === 'create' || c.action === 'update' || c.action === 'delete').map(c => c.file),
+            restarted,
+            message
+          }));
+        } catch (e: any) {
+          console.error(e);
           res.writeHead(500);
           res.end(JSON.stringify({ error: e.message }));
         }

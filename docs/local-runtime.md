@@ -63,6 +63,11 @@ npm run ui
 
 This starts a local daemon on port 4000. Open `http://localhost:4000` in your browser.
 
+In the UI, you have three distinct actions for your snippets:
+* **Save**: Saves the snippet internally within the SEC workspace.
+* **Dry-run Export**: Shows the export plan against the configured or discovered Espanso target directory.
+* **Apply to Espanso**: Writes the export plan to that Espanso target directory and attempts to reload Espanso.
+
 ---
 
 ## 4. Keeping it Updated

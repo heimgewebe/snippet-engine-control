@@ -1,15 +1,20 @@
 import test from 'node:test';
 import * as assert from 'node:assert/strict';
 import * as http from 'http';
+import * as os from 'os';
+import * as path from 'path';
+import * as fs from 'fs';
 import { startDaemon } from '../src/daemon';
 
 test('Daemon Security - Token and Origin validation', async (t) => {
   // Start daemon on a random port
   const port = 4001 + Math.floor(Math.random() * 1000);
-  const daemon = startDaemon(port, { host: '127.0.0.1' });
+  const tempEspansoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-daemon-test-'));
+  const daemon = startDaemon(port, { host: '127.0.0.1', dir: tempEspansoDir });
 
   t.after(() => {
     daemon.server.close();
+    fs.rmSync(tempEspansoDir, { recursive: true, force: true });
   });
 
   // Helper to make requests
@@ -143,5 +148,45 @@ test('Daemon Security - Token and Origin validation', async (t) => {
       c.content && c.content.includes(':drun') && c.content.includes('dry run test')
     );
     assert.equal(hasDryRunChange, true, 'Export plan should include the new draft content');
+  });
+
+  await t.test('POST /api/export/apply applies plan to mock dir and returns success', async () => {
+    // The previous test added 'new-export-test' to the workspace state, so there are changes to write
+
+    const applyRes = await request('/api/export/apply', {
+      method: 'POST',
+      headers: {
+        'X-SEC-Token': token,
+        'Origin': `http://127.0.0.1:${port}`
+      }
+    });
+
+    assert.equal(applyRes.statusCode, 200);
+
+    const body = JSON.parse(applyRes.data);
+    assert.equal(body.success, true);
+    assert.equal(body.changed, true);
+    assert.ok(Array.isArray(body.writtenFiles));
+    assert.equal(typeof body.restarted, 'boolean');
+    assert.equal(typeof body.message, 'string');
+
+    // Verify the file was actually written to the temp dir
+    const targetFile = path.join(tempEspansoDir, 'match', 'sec.generated.yml');
+    assert.equal(fs.existsSync(targetFile), true, 'sec.generated.yml should exist after apply');
+  });
+
+  await t.test('POST /api/export/apply succeeds on repeated invocation', async () => {
+    const applyRes = await request('/api/export/apply', {
+      method: 'POST',
+      headers: {
+        'X-SEC-Token': token,
+        'Origin': `http://127.0.0.1:${port}`
+      }
+    });
+
+    assert.equal(applyRes.statusCode, 200);
+
+    const body = JSON.parse(applyRes.data);
+    assert.equal(body.success, true);
   });
 });
