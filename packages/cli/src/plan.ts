@@ -72,13 +72,11 @@ export function buildExportPlan(options: { engine?: string; dir?: string; inputP
   let action: 'create' | 'update' | 'delete' = 'create';
 
   try {
-    if (fs.existsSync(targetFile)) {
-      const existingContent = fs.readFileSync(targetFile, 'utf8');
-      beforeHash = crypto.createHash('sha256').update(existingContent).digest('hex');
-      action = 'update';
-    }
+    const existingContent = fs.readFileSync(targetFile, 'utf8');
+    beforeHash = crypto.createHash('sha256').update(existingContent).digest('hex');
+    action = 'update';
   } catch (e) {
-    // Ignore if file can't be read
+    // Ignore if file can't be read or doesn't exist
   }
 
   plan.changes.push({
