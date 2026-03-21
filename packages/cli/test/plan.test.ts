@@ -31,6 +31,30 @@ test('buildExportPlan integration tests', async (t) => {
     assert.match(change.content!, /body1/);
   });
 
+  await t.test('throws non-ENOENT read errors', (t) => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-cli-plan-test-'));
+    t.after(() => {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    });
+
+    const matchDir = path.join(tempDir, 'match');
+    fs.mkdirSync(matchDir);
+    const targetFile = path.join(matchDir, 'sec.generated.yml');
+
+    // Create a directory where the file should be to force an EISDIR error
+    fs.mkdirSync(targetFile);
+
+    const snippets: Snippet[] = [
+      { id: '3', triggers: [':err'], body: 'err' }
+    ];
+
+    assert.throws(() => {
+      buildExportPlan({ engine: 'espanso', dir: tempDir }, snippets);
+    }, (err: NodeJS.ErrnoException) => {
+      return err.code === 'EISDIR';
+    });
+  });
+
   await t.test('detects existing file and passes existingContent', (t) => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-cli-plan-test-'));
     t.after(() => {

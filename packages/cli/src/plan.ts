@@ -36,7 +36,9 @@ export function buildExportPlan(options: { engine?: string; dir?: string; inputP
     existingContent = fs.readFileSync(targetFile, 'utf8');
     fileExists = true;
   } catch (e) {
-    // Ignore if file can't be read or doesn't exist
+    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw e;
+    }
   }
 
   const planService = new PlanService();
