@@ -36,6 +36,7 @@ export function buildExportPlan(options: { engine?: string; dir?: string; inputP
     existingContent = fs.readFileSync(targetFile, 'utf8');
     fileExists = true;
   } catch (e) {
+    // Treat missing target file as absent existing content; rethrow other read errors
     if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
       throw e;
     }
