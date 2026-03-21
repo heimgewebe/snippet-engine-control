@@ -33,12 +33,13 @@ export function buildExportPlan(options: { engine?: string; dir?: string; inputP
   let existingContent: string | undefined = undefined;
 
   try {
-    if (fs.existsSync(targetFile)) {
-      existingContent = fs.readFileSync(targetFile, 'utf8');
-      fileExists = true;
-    }
+    existingContent = fs.readFileSync(targetFile, 'utf8');
+    fileExists = true;
   } catch (e) {
-    // Ignore if file can't be read
+    // Treat missing target file as absent existing content; rethrow other read errors
+    if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw e;
+    }
   }
 
   const planService = new PlanService();
