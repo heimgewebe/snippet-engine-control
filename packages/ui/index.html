@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Snippet Studio (sec)</title>
   <style>
-    :root {
+        :root {
       --bg-main: #f4f4f5;
       --bg-surface: #fff;
       --bg-surface-hover: #f4f4f5;
@@ -17,20 +17,32 @@
       --text-light: #9ca3af;
       --primary-color: #4f46e5;
       --primary-hover: #4338ca;
+      --text-on-primary: #fff;
+      --text-error: #b91c1c;
+      --text-success: #047857;
+      --text-danger: #ef4444;
+      --bg-readonly: #f3f4f6;
+      --bg-preview: #f9fafb;
     }
-    body.dark-theme {
+        body.dark-theme {
       --bg-main: #111827;
       --bg-surface: #1f2937;
       --bg-surface-hover: #374151;
       --bg-surface-active: #4b5563;
       --bg-surface-alt: #1f2937;
-      --border-color: #374151;
+      --border-color: var(--text-muted);
       --border-dark: #4b5563;
       --text-main: #f9fafb;
       --text-muted: #9ca3af;
       --text-light: #6b7280;
       --primary-color: #6366f1;
       --primary-hover: #818cf8;
+      --text-on-primary: #fff;
+      --text-error: #fca5a5;
+      --text-success: #34d399;
+      --text-danger: #f87171;
+      --bg-readonly: #1f2937;
+      --bg-preview: #111827;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -93,7 +105,7 @@
       padding: 4px 16px;
       font-size: 0.85em;
       font-weight: bold;
-      color: #4b5563;
+      color: var(--text-muted);
       text-transform: uppercase;
       border-bottom: 1px solid var(--border-dark);
       position: sticky;
@@ -135,7 +147,7 @@
       align-items: center;
       gap: 8px;
       font-size: 0.9em;
-      color: #374151;
+      color: var(--text-muted);
       user-select: none;
       white-space: nowrap;
       flex-shrink: 0;
@@ -160,7 +172,7 @@
       font: inherit;
     }
     .tab-close:hover {
-      color: #ef4444;
+      color: var(--text-danger);
     }
     .toolbar {
       padding: 16px;
@@ -179,7 +191,7 @@
     }
     button.primary {
       background: var(--primary-color);
-      color: var(--bg-surface);
+      color: var(--text-on-primary);
       border-color: var(--primary-color);
     }
     button:hover {
@@ -194,7 +206,7 @@
     .statusbar {
       padding: 6px 16px;
       background: var(--primary-color);
-      color: var(--bg-surface);
+      color: var(--text-on-primary);
       font-size: 0.8em;
       display: flex;
       justify-content: space-between;
@@ -224,7 +236,7 @@
     label {
       font-size: 0.9em;
       font-weight: 600;
-      color: #374151;
+      color: var(--text-muted);
     }
     input, textarea {
       padding: 8px;
@@ -248,7 +260,7 @@
     }
     .preview-box {
       padding: 12px;
-      background: #f9fafb;
+      background: var(--bg-preview);
       border: 1px solid var(--bg-surface-alt);
       border-radius: 4px;
       white-space: pre-wrap;
@@ -258,11 +270,11 @@
     .diagnostics ul {
       padding-left: 20px;
       margin: 0;
-      color: #b91c1c;
+      color: var(--text-error);
       font-size: 0.9em;
     }
     .diagnostics.clean {
-      color: #047857;
+      color: var(--text-success);
     }
     .conflict-link {
       color: var(--primary-color);
@@ -338,7 +350,7 @@
     .command-shortcut {
       font-size: 0.85em;
       color: var(--text-muted);
-      background: #f3f4f6;
+      background: var(--bg-readonly);
       padding: 2px 6px;
       border-radius: 4px;
       border: 1px solid var(--bg-surface-alt);
@@ -389,8 +401,8 @@
       overflow-y: auto;
       font-family: monospace;
       white-space: pre-wrap;
-      background: #1f2937;
-      color: #f3f4f6;
+      background: var(--bg-surface);
+      color: var(--text-main);
     }
     .modal-body-light {
       padding: 16px;
@@ -461,7 +473,7 @@
       <div class="editor-pane">
         <div class="form-group">
           <label>ID</label>
-          <input type="text" id="input-id" readonly disabled style="background: #f3f4f6;">
+          <input type="text" id="input-id" readonly disabled style="background: var(--bg-readonly);">
         </div>
         <div class="form-group">
           <label>Triggers (comma separated)</label>
