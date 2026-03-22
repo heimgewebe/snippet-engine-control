@@ -109,4 +109,9 @@ test('UI app.js - New Snippet Default Behavior', () => {
     const snippets = vm.runInContext('snippets', sandbox);
     assert.strictEqual(snippets.length, 1, 'Should have exactly 1 snippet after clicking New');
     assert.strictEqual(snippets[0].constraints.wordBoundary, true, 'New snippets should default to wordBoundary: true');
+
+    // 5. Verify the UI reflects the wordBoundary state
+    // 'selectSnippet' should have been called, updating the 'input-word' checkbox.
+    const inputWordCheckbox = mockElements['input-word'];
+    assert.strictEqual(inputWordCheckbox.checked, true, 'The UI checkbox should be checked for new snippets');
 });
