@@ -1,3 +1,10 @@
+> **HISTORISCHES ARCHIV**
+> Dieses Dokument ist eine archivierte, historische Vollfassung (Entwicklungsphasen 0-8).
+> Es ist **nicht** die kanonische aktuelle Blaupause.
+> Die aktuelle kanonische Referenz für operative Ausbauachsen und Architektur liegt unter: [**`docs/blaupause.md`**](../blaupause.md)
+
+---
+
 # Blaupause
 
 ## Nordstern
