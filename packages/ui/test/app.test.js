@@ -7,7 +7,7 @@ const path = require('node:path');
 test('UI app.js - New Snippet Default Behavior', () => {
     const listeners = {};
 
-    // We will spy on the mock elements to trigger the event handlers
+    // Spies on mock elements to capture event handlers and state
     const createMockElement = (id) => ({
         id,
         innerHTML: '',
@@ -63,25 +63,21 @@ test('UI app.js - New Snippet Default Behavior', () => {
         'command-list': createMockElement('command-list')
     };
 
-    const mockDocument = {
-        getElementById: (id) => mockElements[id] || createMockElement(id),
-        createElement: (tag) => createMockElement(tag),
-        body: createMockElement('body'),
-        activeElement: null,
-        addEventListener: (event, cb) => {
-            if (!listeners['document']) listeners['document'] = {};
-            listeners['document'][event] = cb;
-        }
-    };
-
-    const mockWindow = {
-        __SEC_TOKEN__: 'mock-token',
-        matchMedia: () => ({ matches: false })
-    };
-
     const sandbox = {
-        document: mockDocument,
-        window: mockWindow,
+        document: {
+            getElementById: (id) => mockElements[id] || createMockElement(id),
+            createElement: (tag) => createMockElement(tag),
+            body: createMockElement('body'),
+            activeElement: null,
+            addEventListener: (event, cb) => {
+                if (!listeners['document']) listeners['document'] = {};
+                listeners['document'][event] = cb;
+            }
+        },
+        window: {
+            __SEC_TOKEN__: 'mock-token',
+            matchMedia: () => ({ matches: false })
+        },
         fetch: async () => ({
             ok: true,
             json: async () => ([]) // Return empty snippet list initially
@@ -95,23 +91,19 @@ test('UI app.js - New Snippet Default Behavior', () => {
 
     vm.createContext(sandbox);
 
-    // 2. Load and run app.js in the sandbox
+    // Load and run app.js in the sandbox
     const code = fs.readFileSync(path.join(__dirname, '../app.js'), 'utf8');
     vm.runInContext(code, sandbox);
 
-    // 3. Trigger the 'New Snippet' flow
+    // Trigger the 'New Snippet' flow
     assert.ok(listeners['btn-new']['click'], 'New button should have a click listener');
     listeners['btn-new']['click']();
 
-    // 4. Verify the word boundary logic
-    // We expect `snippets` array in the VM to have a new snippet at index 0
-    // Access snippets from the VM context using vm.runInContext
+    // Verify data state
     const snippets = vm.runInContext('snippets', sandbox);
     assert.strictEqual(snippets.length, 1, 'Should have exactly 1 snippet after clicking New');
     assert.strictEqual(snippets[0].constraints.wordBoundary, true, 'New snippets should default to wordBoundary: true');
 
-    // 5. Verify the UI reflects the wordBoundary state
-    // 'selectSnippet' should have been called, updating the 'input-word' checkbox.
-    const inputWordCheckbox = mockElements['input-word'];
-    assert.strictEqual(inputWordCheckbox.checked, true, 'The UI checkbox should be checked for new snippets');
+    // Verify UI state
+    assert.strictEqual(mockElements['input-word'].checked, true, 'The UI checkbox should be checked for new snippets');
 });
