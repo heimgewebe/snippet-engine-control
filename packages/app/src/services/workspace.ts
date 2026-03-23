@@ -25,6 +25,15 @@ export class WorkspaceService {
     return fingerprint(content as unknown as Snippet).substring(0, 12);
   }
 
+  private rebuildIndex(workspace: Workspace): void {
+    workspace.docIndex = new Map();
+    for (const set of workspace.snippetSets) {
+      for (const doc of set.snippets) {
+        workspace.docIndex.set(doc.stableId, doc);
+      }
+    }
+  }
+
   public openWorkspace(options: ValidateOptions): Workspace {
     const snippets = this.loadSnippets(options);
 
@@ -48,7 +57,7 @@ export class WorkspaceService {
       }
     ];
 
-    return {
+    const workspace: Workspace = {
       id: crypto.randomUUID(),
       engineTarget: 'espanso',
       snippetSets,
@@ -57,8 +66,12 @@ export class WorkspaceService {
       previewState: { results: {} },
       exportState: {},
       runtimeState: { isRunning: true },
-      history: { undoStack: [], redoStack: [] }
+      history: { undoStack: [], redoStack: [] },
+      docIndex: new Map()
     };
+
+    this.rebuildIndex(workspace);
+    return workspace;
   }
 
   public selectDocument(workspace: Workspace, stableId: string): void {
@@ -86,6 +99,7 @@ export class WorkspaceService {
 
     // Add to the first set for now, or could be a target set depending on options
     workspace.snippetSets[0].snippets.push(newDoc);
+    workspace.docIndex.set(newDoc.stableId, newDoc);
     workspace.activeDocumentId = newDoc.stableId;
 
     return newDoc;
@@ -98,6 +112,7 @@ export class WorkspaceService {
         // Push to history before mutating
         this.historyService.pushState(workspace);
         set.snippets.splice(docIndex, 1);
+        workspace.docIndex.delete(stableId);
 
         // Reset active document if it was the one deleted
         if (workspace.activeDocumentId === stableId) {
@@ -126,13 +141,15 @@ export class WorkspaceService {
         // Only push to history when an actual mutation takes place
         this.historyService.pushState(workspace);
 
-        set.snippets[docIndex] = {
+        const updatedDoc = {
           ...existingDoc,
           revisionId: newRevisionId,
           ir: normalizedIr,
           dirty: true,
           derived: {} // clear derived state as it might be invalid now
         };
+        set.snippets[docIndex] = updatedDoc;
+        workspace.docIndex.set(stableId, updatedDoc);
         return true;
       }
     }
@@ -140,11 +157,19 @@ export class WorkspaceService {
   }
 
   public undo(workspace: Workspace): boolean {
-    return this.historyService.undo(workspace);
+    const success = this.historyService.undo(workspace);
+    if (success) {
+      this.rebuildIndex(workspace);
+    }
+    return success;
   }
 
   public redo(workspace: Workspace): boolean {
-    return this.historyService.redo(workspace);
+    const success = this.historyService.redo(workspace);
+    if (success) {
+      this.rebuildIndex(workspace);
+    }
+    return success;
   }
 
   public loadSnippets(options: ValidateOptions): Snippet[] {

@@ -58,7 +58,8 @@ function createMockWorkspace(): Workspace {
     previewState: { results: {} },
     exportState: {},
     runtimeState: { isRunning: true },
-    history: { undoStack: [], redoStack: [] }
+    history: { undoStack: [], redoStack: [] },
+    docIndex: new Map()
   };
 }
 
