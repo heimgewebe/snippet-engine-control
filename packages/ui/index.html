@@ -76,6 +76,8 @@
       width: 100%;
     }
     .search-bar {
+      background: var(--bg-surface);
+      color: var(--text-main);
       width: 100%;
       box-sizing: border-box;
       padding: 6px 8px;
@@ -94,7 +96,7 @@
       cursor: pointer;
     }
     aside li:hover {
-      background: var(--bg-main);
+      background: var(--bg-surface-hover);
     }
     aside li.selected {
       background: var(--bg-surface-active);
@@ -153,7 +155,7 @@
       flex-shrink: 0;
     }
     .tab:hover {
-      background: var(--border-dark);
+      background: var(--bg-surface-hover);
     }
     .tab.active {
       background: var(--bg-surface);
@@ -239,6 +241,8 @@
       color: var(--text-muted);
     }
     input, textarea {
+      background: var(--bg-surface);
+      color: var(--text-main);
       padding: 8px;
       border: 1px solid var(--border-dark);
       border-radius: 4px;
