@@ -107,3 +107,61 @@ test('UI app.js - New Snippet Default Behavior', () => {
     // Verify UI state
     assert.strictEqual(mockElements['input-word'].checked, true, 'The UI checkbox should be checked for new snippets');
 });
+
+test('UI app.js - Theme Initialization (Dark Mode)', () => {
+    // We only need to spy on the body's classList for this test
+    const bodyClasses = new Set();
+    const createMockElement = (id) => ({
+        id, innerHTML: '', value: '',
+        addEventListener: () => {}, setAttribute: () => {},
+        classList: {
+            add: (cls) => bodyClasses.add(cls),
+            remove: (cls) => bodyClasses.delete(cls),
+            contains: (cls) => bodyClasses.has(cls)
+        }
+    });
+
+    const mockElements = {
+        'setting-theme': createMockElement('setting-theme')
+    };
+
+    const sandbox = {
+        document: {
+            getElementById: (id) => mockElements[id] || createMockElement(id),
+            createElement: (tag) => createMockElement(tag),
+            body: createMockElement('body'),
+            addEventListener: () => {}
+        },
+        window: {
+            __SEC_TOKEN__: 'mock-token',
+            matchMedia: () => ({ matches: false }) // Simulate non-dark OS
+        },
+        fetch: async () => ({
+            ok: true,
+            json: async () => ([])
+        }),
+        console: { log: () => {}, error: () => {} },
+        setTimeout: (cb) => { cb(); return 1; },
+        clearTimeout: () => {},
+        // Inject stored dark theme preference
+        localStorage: {
+            getItem: (key) => {
+                if (key === 'sec_ui_settings') return JSON.stringify({ theme: 'dark' });
+                return null;
+            },
+            setItem: () => {}
+        }
+    };
+
+    vm.createContext(sandbox);
+
+    // Load and run app.js in the sandbox
+    const code = fs.readFileSync(path.join(__dirname, '../app.js'), 'utf8');
+    vm.runInContext(code, sandbox);
+
+    // `loadSettings()` is called automatically on startup in app.js
+    // It should read the 'dark' theme from our mocked localStorage
+    // and apply the 'dark-theme' class to document.body
+    assert.strictEqual(bodyClasses.has('dark-theme'), true, 'The dark-theme class should be applied to the body based on localStorage');
+    assert.strictEqual(mockElements['setting-theme'].value, 'dark', 'The theme selector dropdown should be updated to dark');
+});
