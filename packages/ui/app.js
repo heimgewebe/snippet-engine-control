@@ -483,6 +483,7 @@ btnNew.addEventListener('click', () => {
     id: newId,
     triggers: [':new'],
     body: 'new snippet',
+    constraints: { wordBoundary: true },
     origin: { source: 'espanso', path: 'new' }
   };
   snippets.unshift(s);
