@@ -1,8 +1,10 @@
-import * as assert from 'node:assert/strict';
+/**
+ * Benchmark for PreviewService.
+ * This is intended for manual performance verification and not part of the standard CI test suite.
+ */
 import test from 'node:test';
 import { Workspace, SnippetSet, SnippetDocument } from '../src/model/workspace';
 import { PreviewService } from '../src/services/preview';
-import { Snippet } from '@snippet-engine-control/core';
 
 function createLargeWorkspace(numSets: number, numSnippetsPerSet: number): Workspace {
   const snippetSets: SnippetSet[] = [];

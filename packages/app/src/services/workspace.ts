@@ -26,7 +26,7 @@ export class WorkspaceService {
   }
 
   private rebuildIndex(workspace: Workspace): void {
-    workspace.docIndex = new Map();
+    workspace.docIndex = new Map<string, SnippetDocument>();
     for (const set of workspace.snippetSets) {
       for (const doc of set.snippets) {
         workspace.docIndex.set(doc.stableId, doc);
@@ -67,7 +67,7 @@ export class WorkspaceService {
       exportState: {},
       runtimeState: { isRunning: true },
       history: { undoStack: [], redoStack: [] },
-      docIndex: new Map()
+      docIndex: new Map<string, SnippetDocument>()
     };
 
     this.rebuildIndex(workspace);
