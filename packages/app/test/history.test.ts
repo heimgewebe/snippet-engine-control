@@ -1,9 +1,47 @@
 import test from 'node:test';
 import * as assert from 'node:assert/strict';
 import { HistoryService } from '../src/services/history';
-import { Workspace } from '../src/model/workspace';
+import { Workspace, SnippetDocument } from '../src/model/workspace';
 
 function createMockWorkspace(): Workspace {
+  const doc1: SnippetDocument = {
+    stableId: 'doc-1',
+    revisionId: 'rev-1',
+    dirty: false,
+    ir: {
+      id: 'rev-1',
+      triggers: ['!hello'],
+      body: 'Hello world',
+      constraints: {
+        appInclude: ['terminal']
+      },
+      tags: ['test'],
+      origin: {
+        source: 'test.yml',
+        path: '/'
+      }
+    },
+    derived: {
+      preview: {
+        text: 'Hello world',
+        isTemplate: false,
+        warnings: ['test-warning'],
+        trace: ['test-trace']
+      },
+      diagnostics: {
+        triggerCollisions: ['test-collision'],
+        ambiguousBoundaries: [],
+        encodingIssues: [],
+        unsupportedFeatures: []
+      },
+      exportImpact: {
+        changedFiles: 1,
+        addedSnippets: 0,
+        removedSnippets: 0
+      }
+    }
+  };
+
   return {
     id: 'ws-1',
     engineTarget: 'espanso',
@@ -12,45 +50,7 @@ function createMockWorkspace(): Workspace {
         id: 'set-1',
         name: 'default',
         source: { type: 'file', path: '/test/match/sec.generated.yml' },
-        snippets: [
-          {
-            stableId: 'doc-1',
-            revisionId: 'rev-1',
-            dirty: false,
-            ir: {
-              id: 'rev-1',
-              triggers: ['!hello'],
-              body: 'Hello world',
-              constraints: {
-                appInclude: ['terminal']
-              },
-              tags: ['test'],
-              origin: {
-                source: 'test.yml',
-                path: '/'
-              }
-            },
-            derived: {
-              preview: {
-                text: 'Hello world',
-                isTemplate: false,
-                warnings: ['test-warning'],
-                trace: ['test-trace']
-              },
-              diagnostics: {
-                triggerCollisions: ['test-collision'],
-                ambiguousBoundaries: [],
-                encodingIssues: [],
-                unsupportedFeatures: []
-              },
-              exportImpact: {
-                changedFiles: 1,
-                addedSnippets: 0,
-                removedSnippets: 0
-              }
-            }
-          }
-        ]
+        snippets: [doc1]
       }
     ],
     activeDocumentId: 'doc-1',
@@ -58,7 +58,8 @@ function createMockWorkspace(): Workspace {
     previewState: { results: {} },
     exportState: {},
     runtimeState: { isRunning: true },
-    history: { undoStack: [], redoStack: [] }
+    history: { undoStack: [], redoStack: [] },
+    docIndex: new Map<string, SnippetDocument>([['doc-1', doc1]])
   };
 }
 

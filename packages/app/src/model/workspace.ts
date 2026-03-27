@@ -81,4 +81,5 @@ export interface Workspace {
   exportState: ExportState;
   runtimeState: RuntimeState;
   history: WorkspaceHistory;
+  docIndex: Map<string, SnippetDocument>;
 }

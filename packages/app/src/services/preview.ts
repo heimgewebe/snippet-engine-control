@@ -35,18 +35,15 @@ export class PreviewService {
   public previewWorkspaceContext(workspace: Workspace): void {
     if (!workspace.activeDocumentId) return;
 
-    for (const set of workspace.snippetSets) {
-      const doc = set.snippets.find(s => s.stableId === workspace.activeDocumentId);
-      if (doc) {
-        doc.derived.preview = this.previewDocument(doc.ir, {
-          engineTarget: workspace.engineTarget
-        });
+    const doc = workspace.docIndex.get(workspace.activeDocumentId);
+    if (doc) {
+      doc.derived.preview = this.previewDocument(doc.ir, {
+        engineTarget: workspace.engineTarget
+      });
 
-        // Update the workspace preview state as well
-        workspace.previewState.activePreviewId = doc.stableId;
-        workspace.previewState.results[doc.stableId] = doc.derived.preview;
-        break;
-      }
+      // Update the workspace preview state as well
+      workspace.previewState.activePreviewId = doc.stableId;
+      workspace.previewState.results[doc.stableId] = doc.derived.preview;
     }
   }
 }
