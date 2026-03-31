@@ -18,24 +18,24 @@ export class ValidationService {
       const matchedPaths = new Set<string>();
 
       if (snippetId) {
-        const s = normalizedSnippets.find(s => s.id === snippetId);
-        if (s?.origin?.path) matchedPaths.add(s.origin.path);
+        const found = normalizedSnippets.find(sn => sn.id === snippetId);
+        if (found?.origin?.path) matchedPaths.add(found.origin.path);
       }
 
       const snippetMatchRegex = /Snippet\s+'([^']+)'/g;
       let match;
       while ((match = snippetMatchRegex.exec(issue)) !== null) {
         const id = match[1];
-        const s = normalizedSnippets.find(s => s.id === id);
-        if (s?.origin?.path) matchedPaths.add(s.origin.path);
+        const found = normalizedSnippets.find(sn => sn.id === id);
+        if (found?.origin?.path) matchedPaths.add(found.origin.path);
       }
 
       const idsMatch = issue.match(/used by ids:\s*([^\n]+)/);
       if (idsMatch && idsMatch[1]) {
         const ids = idsMatch[1].split(',').map(id => id.trim()).filter(id => id.length > 0);
         ids.forEach(id => {
-          const s = normalizedSnippets.find(s => s.id === id);
-          if (s?.origin?.path) matchedPaths.add(s.origin.path);
+          const found = normalizedSnippets.find(sn => sn.id === id);
+          if (found?.origin?.path) matchedPaths.add(found.origin.path);
         });
       }
 

@@ -51,7 +51,7 @@ switch (command) {
     doctor({ engine, dir });
     break;
   case 'lint':
-    lint(inputPath);
+    lint({ inputPath, engine, dir });
     break;
   case 'ui':
   case 'daemon':

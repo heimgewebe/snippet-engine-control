@@ -9,6 +9,15 @@ export interface PlanOptions {
   existingContent?: string;
 }
 
+interface EspansoMatch {
+  replace: string;
+  trigger?: string;
+  triggers?: string[];
+  word?: boolean;
+  app_include?: string[];
+  app_exclude?: string[];
+}
+
 export class PlanService {
   public buildPlan(snippets: Snippet[], options: PlanOptions): ExportPlan {
     if (options.engine !== 'espanso') {
@@ -16,7 +25,7 @@ export class PlanService {
     }
 
     const plan: ExportPlan = { changes: [], unsupportedFeatures: [] };
-    const matches: any[] = [];
+    const matches: EspansoMatch[] = [];
 
     for (const snippet of snippets) {
       // Collect unsupported features
@@ -27,7 +36,7 @@ export class PlanService {
         plan.unsupportedFeatures!.push(`Snippet '${snippet.id}' uses unsupported feature: tags`);
       }
 
-      const match: any = { replace: snippet.body };
+      const match: EspansoMatch = { replace: snippet.body };
 
       if (snippet.triggers.length === 1) {
         match.trigger = snippet.triggers[0];

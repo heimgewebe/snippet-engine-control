@@ -66,10 +66,12 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     }
 
     // Static file serving for UI
-    let filePath = path.join(uiDir, req.url === '/' ? 'index.html' : req.url || 'index.html');
+    const parsedUrl = new URL(req.url || '/', `http://${req.headers.host}`);
+    const decodedPath = decodeURIComponent(parsedUrl.pathname);
+    let filePath = path.resolve(uiDir, decodedPath === '/' ? 'index.html' : '.' + decodedPath);
 
-    // basic security check
-    if (!filePath.startsWith(uiDir)) {
+    // security check: ensure resolved path is within uiDir
+    if (!filePath.startsWith(uiDir + path.sep) && filePath !== uiDir) {
       res.writeHead(403);
       res.end('Forbidden');
       return;
@@ -156,12 +158,22 @@ function handleApiRequest(
     return;
   }
 
+  const MAX_BODY_SIZE = 1024 * 1024; // 1 MB
   let body = '';
+  let bodyLimitExceeded = false;
   req.on('data', chunk => {
+    if (bodyLimitExceeded) return;
     body += chunk.toString();
+    if (body.length > MAX_BODY_SIZE) {
+      bodyLimitExceeded = true;
+      res.writeHead(413);
+      res.end(JSON.stringify({ error: 'Request body too large' }));
+      req.destroy();
+    }
   });
 
   req.on('end', () => {
+    if (bodyLimitExceeded) return;
     try {
       if (req.method === 'GET' && pathname === '/api/snippets') {
         res.writeHead(200);
