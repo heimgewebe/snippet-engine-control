@@ -71,7 +71,8 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     let filePath = path.resolve(uiDir, decodedPath === '/' ? 'index.html' : '.' + decodedPath);
 
     // security check: ensure resolved path is within uiDir
-    if (!filePath.startsWith(uiDir + path.sep) && filePath !== uiDir) {
+    const relativePath = path.relative(uiDir, filePath);
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
       res.writeHead(403);
       res.end('Forbidden');
       return;
@@ -159,21 +160,24 @@ function handleApiRequest(
   }
 
   const MAX_BODY_SIZE = 1024 * 1024; // 1 MB
-  let body = '';
+  const bodyChunks: Buffer[] = [];
+  let bodyLength = 0;
   let bodyLimitExceeded = false;
-  req.on('data', chunk => {
+  req.on('data', (chunk: Buffer) => {
     if (bodyLimitExceeded) return;
-    body += chunk.toString();
-    if (body.length > MAX_BODY_SIZE) {
+    bodyLength += chunk.length;
+    if (bodyLength > MAX_BODY_SIZE) {
       bodyLimitExceeded = true;
       res.writeHead(413);
       res.end(JSON.stringify({ error: 'Request body too large' }));
-      req.destroy();
+      return;
     }
+    bodyChunks.push(chunk);
   });
 
   req.on('end', () => {
     if (bodyLimitExceeded) return;
+    const body = Buffer.concat(bodyChunks).toString('utf8');
     try {
       if (req.method === 'GET' && pathname === '/api/snippets') {
         res.writeHead(200);
