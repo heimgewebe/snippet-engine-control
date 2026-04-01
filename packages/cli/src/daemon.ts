@@ -66,9 +66,10 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     }
 
     // Static file serving for UI
-    const parsedUrl = new URL(req.url || '/', `http://${req.headers.host}`);
+    // Use a fixed trusted base — req.headers.host is untrusted input and not needed here.
     let decodedPath: string;
     try {
+      const parsedUrl = new URL(req.url || '/', 'http://localhost');
       decodedPath = decodeURIComponent(parsedUrl.pathname);
     } catch {
       res.writeHead(400);
@@ -152,7 +153,15 @@ function handleApiRequest(
   workspace: Workspace,
   workspaceService: WorkspaceService
 ) {
-  const url = new URL(req.url!, `http://${req.headers.host}`);
+  // Use a fixed trusted base — req.headers.host is untrusted input and not needed here.
+  let url: URL;
+  try {
+    url = new URL(req.url || '/', 'http://localhost');
+  } catch {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'Bad Request: Invalid URL' }));
+    return;
+  }
   const pathname = url.pathname;
   res.setHeader('Content-Type', 'application/json');
 
@@ -177,6 +186,7 @@ function handleApiRequest(
       bodyLimitExceeded = true;
       res.writeHead(413, { 'Connection': 'close' });
       res.end(JSON.stringify({ error: 'Request body too large' }));
+      req.resume(); // drain and discard remaining request data
       return;
     }
     bodyChunks.push(chunk);
