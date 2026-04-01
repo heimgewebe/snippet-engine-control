@@ -67,7 +67,14 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
 
     // Static file serving for UI
     const parsedUrl = new URL(req.url || '/', `http://${req.headers.host}`);
-    const decodedPath = decodeURIComponent(parsedUrl.pathname);
+    let decodedPath: string;
+    try {
+      decodedPath = decodeURIComponent(parsedUrl.pathname);
+    } catch {
+      res.writeHead(400);
+      res.end('Bad Request: Invalid URL encoding');
+      return;
+    }
     let filePath = path.resolve(uiDir, decodedPath === '/' ? 'index.html' : '.' + decodedPath);
 
     // security check: ensure resolved path is within uiDir
@@ -168,7 +175,7 @@ function handleApiRequest(
     bodyLength += chunk.length;
     if (bodyLength > MAX_BODY_SIZE) {
       bodyLimitExceeded = true;
-      res.writeHead(413);
+      res.writeHead(413, { 'Connection': 'close' });
       res.end(JSON.stringify({ error: 'Request body too large' }));
       return;
     }

@@ -189,4 +189,26 @@ test('Daemon Security - Token and Origin validation', async (t) => {
     const body = JSON.parse(applyRes.data);
     assert.equal(body.success, true);
   });
+
+  await t.test('GET with malformed percent-encoding returns 400', async () => {
+    const res = await request('/foo%ZZ', { method: 'GET' });
+    assert.equal(res.statusCode, 400);
+    assert.equal(res.data, 'Bad Request: Invalid URL encoding');
+  });
+
+  await t.test('POST /api/preview with oversized body returns 413', async () => {
+    // Construct a body slightly above the 1 MB limit
+    const oversizedBody = 'x'.repeat(1024 * 1024 + 1);
+    const res = await request('/api/preview', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-SEC-Token': token,
+        'Content-Length': String(Buffer.byteLength(oversizedBody))
+      }
+    }, oversizedBody);
+    assert.equal(res.statusCode, 413);
+    const parsed = JSON.parse(res.data);
+    assert.equal(parsed.error, 'Request body too large');
+  });
 });
