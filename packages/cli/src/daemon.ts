@@ -66,10 +66,21 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     }
 
     // Static file serving for UI
-    let filePath = path.join(uiDir, req.url === '/' ? 'index.html' : req.url || 'index.html');
+    // Use a fixed trusted base — req.headers.host is untrusted input and not needed here.
+    let decodedPath: string;
+    try {
+      const parsedUrl = new URL(req.url || '/', 'http://localhost');
+      decodedPath = decodeURIComponent(parsedUrl.pathname);
+    } catch {
+      res.writeHead(400);
+      res.end('Bad Request: Invalid URL encoding');
+      return;
+    }
+    let filePath = path.resolve(uiDir, decodedPath === '/' ? 'index.html' : '.' + decodedPath);
 
-    // basic security check
-    if (!filePath.startsWith(uiDir)) {
+    // security check: ensure resolved path is within uiDir
+    const relativePath = path.relative(uiDir, filePath);
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
       res.writeHead(403);
       res.end('Forbidden');
       return;
@@ -142,7 +153,15 @@ function handleApiRequest(
   workspace: Workspace,
   workspaceService: WorkspaceService
 ) {
-  const url = new URL(req.url!, `http://${req.headers.host}`);
+  // Use a fixed trusted base — req.headers.host is untrusted input and not needed here.
+  let url: URL;
+  try {
+    url = new URL(req.url || '/', 'http://localhost');
+  } catch {
+    res.writeHead(400);
+    res.end(JSON.stringify({ error: 'Bad Request: Invalid URL' }));
+    return;
+  }
   const pathname = url.pathname;
   res.setHeader('Content-Type', 'application/json');
 
@@ -156,12 +175,26 @@ function handleApiRequest(
     return;
   }
 
-  let body = '';
-  req.on('data', chunk => {
-    body += chunk.toString();
+  const MAX_BODY_SIZE = 1024 * 1024; // 1 MB
+  const bodyChunks: Buffer[] = [];
+  let bodyLength = 0;
+  let bodyLimitExceeded = false;
+  req.on('data', (chunk: Buffer) => {
+    if (bodyLimitExceeded) return;
+    bodyLength += chunk.length;
+    if (bodyLength > MAX_BODY_SIZE) {
+      bodyLimitExceeded = true;
+      res.writeHead(413, { 'Connection': 'close' });
+      res.end(JSON.stringify({ error: 'Request body too large' }));
+      req.resume(); // drain and discard remaining request data
+      return;
+    }
+    bodyChunks.push(chunk);
   });
 
   req.on('end', () => {
+    if (bodyLimitExceeded) return;
+    const body = Buffer.concat(bodyChunks).toString('utf8');
     try {
       if (req.method === 'GET' && pathname === '/api/snippets') {
         res.writeHead(200);
