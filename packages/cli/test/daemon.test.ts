@@ -196,6 +196,16 @@ test('Daemon Security - Token and Origin validation', async (t) => {
     assert.equal(res.data, 'Bad Request: Invalid URL encoding');
   });
 
+  await t.test('GET with URL-encoded path traversal returns 403', async () => {
+    // %2F is a percent-encoded slash. The URL parser preserves it as-is in the
+    // pathname (so ".." is not normalised away), but decodeURIComponent later
+    // restores the slash, producing "/../etc/passwd". path.resolve then places
+    // the resulting filePath outside uiDir, which path.relative catches with "..".
+    const res = await request('/..%2Fetc%2Fpasswd', { method: 'GET' });
+    assert.equal(res.statusCode, 403);
+    assert.equal(res.data, 'Forbidden');
+  });
+
   await t.test('POST /api/preview with oversized body returns 413', async () => {
     // Construct a body slightly above the 1 MB limit
     const oversizedBody = 'x'.repeat(1024 * 1024 + 1);
