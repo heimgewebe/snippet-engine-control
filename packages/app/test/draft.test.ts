@@ -15,13 +15,11 @@ test('DraftService', async (t) => {
 
     const result = service.saveDraft(draft);
 
-    // Verify returning document
     assert.ok(result.stableId);
     assert.ok(result.revisionId);
     assert.equal(result.ir.triggers[0], 'test');
     assert.equal(result.dirty, true);
 
-    // Verify persistence in the store (state-based truth)
     const inStore = store.get(result.stableId);
     assert.ok(inStore, 'Draft should be persisted in the store');
     assert.equal(inStore?.stableId, result.stableId);
@@ -32,7 +30,6 @@ test('DraftService', async (t) => {
     const store = new SnippetStore();
     const service = new DraftService(store);
 
-    // Initial save
     const first = service.saveDraft({
       triggers: ['test'],
       body: 'test body 1'
@@ -45,13 +42,11 @@ test('DraftService', async (t) => {
 
     const result = service.saveDraft(updatedDraft, first.stableId);
 
-    // Verify correct update behavior
     assert.equal(result.stableId, first.stableId, 'Stable ID should not change on update');
-    assert.notEqual(result.revisionId, first.revisionId, 'Revision ID should change on content update');
+    assert.notStrictEqual(result.revisionId, first.revisionId, 'Revision ID should change on content update');
     assert.equal(result.ir.body, 'updated body');
     assert.equal(result.dirty, true);
 
-    // Verify persistence of the update in the store
     const inStore = store.get(first.stableId);
     assert.equal(inStore?.ir.body, 'updated body', 'Store state should reflect the update');
   });
