@@ -10,7 +10,12 @@ test('Daemon Security - Token and Origin validation', async (t) => {
   // Start daemon on a random port
   const port = 4001 + Math.floor(Math.random() * 1000);
   const tempEspansoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-daemon-test-'));
-  const daemon = startDaemon(port, { host: '127.0.0.1', dir: tempEspansoDir });
+  let restartCalls = 0;
+  const daemon = startDaemon(
+    port,
+    { host: '127.0.0.1', dir: tempEspansoDir },
+    { restartEspanso: () => { restartCalls += 1; return true; } },
+  );
 
   t.after(() => {
     daemon.server.close();
@@ -167,7 +172,8 @@ test('Daemon Security - Token and Origin validation', async (t) => {
     assert.equal(body.success, true);
     assert.equal(body.changed, true);
     assert.ok(Array.isArray(body.writtenFiles));
-    assert.equal(typeof body.restarted, 'boolean');
+    assert.equal(body.restarted, true);
+    assert.equal(restartCalls, 1);
     assert.equal(typeof body.message, 'string');
 
     // Verify the file was actually written to the temp dir
@@ -188,6 +194,8 @@ test('Daemon Security - Token and Origin validation', async (t) => {
 
     const body = JSON.parse(applyRes.data);
     assert.equal(body.success, true);
+    assert.equal(body.restarted, true);
+    assert.equal(restartCalls, 2);
   });
 
   await t.test('GET with malformed percent-encoding returns 400', async () => {
@@ -221,4 +229,42 @@ test('Daemon Security - Token and Origin validation', async (t) => {
     const parsed = JSON.parse(res.data);
     assert.equal(parsed.error, 'Request body too large');
   });
+});
+
+test('Daemon dynamic port - reports and authorizes the OS-assigned port', async (t) => {
+  const tempEspansoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sec-daemon-port-test-'));
+  const daemon = startDaemon(0, { host: '127.0.0.1', dir: tempEspansoDir });
+
+  t.after(() => {
+    daemon.server.close();
+    fs.rmSync(tempEspansoDir, { recursive: true, force: true });
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    if (daemon.server.listening) {
+      resolve();
+      return;
+    }
+    daemon.server.once('listening', resolve);
+    daemon.server.once('error', reject);
+  });
+
+  assert.ok(daemon.port > 0, `expected assigned port, got ${daemon.port}`);
+
+  const statusCode = await new Promise<number>((resolve, reject) => {
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: daemon.port,
+      path: '/',
+      method: 'GET',
+      headers: { Origin: `http://127.0.0.1:${daemon.port}` },
+    }, res => {
+      res.resume();
+      res.on('end', () => resolve(res.statusCode || 500));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+
+  assert.equal(statusCode, 200);
 });

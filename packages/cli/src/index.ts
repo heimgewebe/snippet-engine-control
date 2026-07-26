@@ -56,21 +56,33 @@ switch (command) {
   case 'ui':
   case 'daemon':
     let host = '127.0.0.1';
+    let port = 4000;
     let allowLan = false;
     for (let i = 1; i < args.length; i++) {
       if (args[i] === '--host') {
         if (i + 1 >= args.length || args[i + 1].startsWith('--')) {
           console.error(`Error: --host requires a value.`);
-          console.error(`Usage: sec ui [--host <ip>] [--allow-lan]`);
+          console.error(`Usage: sec ui [--host <ip>] [--port <0-65535>] [--allow-lan]`);
           process.exit(2);
         }
         host = args[i + 1];
+        i++;
+      } else if (args[i] === '--port') {
+        if (i + 1 >= args.length || !/^(?:0|[1-9]\d*)$/.test(args[i + 1])) {
+          console.error(`Error: --port requires an integer from 0 to 65535.`);
+          process.exit(2);
+        }
+        port = Number(args[i + 1]);
+        if (port > 65_535) {
+          console.error(`Error: --port requires an integer from 0 to 65535.`);
+          process.exit(2);
+        }
         i++;
       } else if (args[i] === '--allow-lan') {
         allowLan = true;
       }
     }
-    startDaemon(4000, { dir, host, allowLan });
+    startDaemon(port, { dir, host, allowLan });
     break;
   case undefined:
   case 'help':

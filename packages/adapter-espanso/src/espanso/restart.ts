@@ -1,13 +1,215 @@
 import { LogOptions, RuntimeLogChunk } from '@snippet-engine-control/core';
+import * as crypto from 'node:crypto';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { runCommand, SPAWN_TIMEOUT_MS } from '../utils/exec';
 
-export function restartEspanso(): boolean {
+const ESPANSO_SERVICE = 'espanso.service';
+const SNAP_CURRENT_BINARY = '/snap/espanso/current/espanso';
+const SNAP_EXECUTABLE_PATTERN = /\/snap\/(?:bin\/espanso|espanso\/(?:current|\d+)\/espanso)\b/;
+const DROP_IN_NAME = '10-sec-snap-wrapper.conf';
+const STABILITY_WAIT_MS = 10_000;
+export const ESPANSO_SNAP_DROP_IN = '[Service]\nExecStart=\nExecStart=/snap/espanso/current/espanso launcher\n';
+
+type CommandRunner = typeof runCommand;
+
+interface ServiceSnapshot {
+  activeState: string;
+  subState: string;
+  mainPid: string;
+  restartCount: string;
+}
+
+export interface RestartEspansoDependencies {
+  run: CommandRunner;
+  platform: NodeJS.Platform;
+  homeDir: string;
+  xdgConfigHome?: string;
+  fileExists: (filePath: string) => boolean;
+  writeDropIn: (filePath: string, content: string) => void;
+  sleep: (milliseconds: number) => void;
+}
+
+function sleepSynchronously(milliseconds: number): void {
+  const signal = new Int32Array(new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT));
+  Atomics.wait(signal, 0, 0, milliseconds);
+}
+
+function writeFileAtomically(filePath: string, content: string): void {
+  const directory = path.dirname(filePath);
+  fs.mkdirSync(directory, { recursive: true, mode: 0o755 });
+
+  const temporaryPath = path.join(
+    directory,
+    `.${path.basename(filePath)}.${process.pid}.${crypto.randomUUID()}.tmp`,
+  );
+
   try {
-    const result = runCommand('espanso', ['restart'], SPAWN_TIMEOUT_MS);
-    return result.ok;
-  } catch (e) {
+    fs.writeFileSync(temporaryPath, content, {
+      encoding: 'utf8',
+      flag: 'wx',
+      mode: 0o644,
+    });
+    fs.renameSync(temporaryPath, filePath);
+  } finally {
+    fs.rmSync(temporaryPath, { force: true });
+  }
+}
+
+function defaultRestartDependencies(): RestartEspansoDependencies {
+  return {
+    run: runCommand,
+    platform: process.platform,
+    homeDir: os.homedir(),
+    xdgConfigHome: process.env.XDG_CONFIG_HOME,
+    fileExists: fs.existsSync,
+    writeDropIn: writeFileAtomically,
+    sleep: sleepSynchronously,
+  };
+}
+
+function configRoot(dependencies: RestartEspansoDependencies): string {
+  if (dependencies.xdgConfigHome && path.isAbsolute(dependencies.xdgConfigHome)) {
+    return dependencies.xdgConfigHome;
+  }
+  return path.join(dependencies.homeDir, '.config');
+}
+
+function readServiceSnapshot(dependencies: RestartEspansoDependencies): ServiceSnapshot | null {
+  const result = dependencies.run(
+    'systemctl',
+    [
+      '--user',
+      'show',
+      ESPANSO_SERVICE,
+      '--property=ActiveState',
+      '--property=SubState',
+      '--property=MainPID',
+      '--property=NRestarts',
+    ],
+    SPAWN_TIMEOUT_MS,
+  );
+  if (!result.ok) {
+    return null;
+  }
+
+  const values = new Map<string, string>();
+  for (const line of result.stdout.split('\n')) {
+    const separator = line.indexOf('=');
+    if (separator <= 0) {
+      continue;
+    }
+    values.set(line.slice(0, separator), line.slice(separator + 1));
+  }
+
+  return {
+    activeState: values.get('ActiveState') ?? '',
+    subState: values.get('SubState') ?? '',
+    mainPid: values.get('MainPID') ?? '',
+    restartCount: values.get('NRestarts') ?? '',
+  };
+}
+
+function isHealthySnapshot(snapshot: ServiceSnapshot | null): snapshot is ServiceSnapshot {
+  return snapshot !== null
+    && snapshot.activeState === 'active'
+    && snapshot.subState === 'running'
+    && /^[1-9]\d*$/.test(snapshot.mainPid)
+    && /^\d+$/.test(snapshot.restartCount);
+}
+
+function repairSnapSystemdService(dependencies: RestartEspansoDependencies): boolean {
+  if (dependencies.platform !== 'linux' || !dependencies.fileExists(SNAP_CURRENT_BINARY)) {
     return false;
   }
+
+  const fragment = dependencies.run(
+    'systemctl',
+    ['--user', 'show', ESPANSO_SERVICE, '--property=FragmentPath', '--value'],
+    SPAWN_TIMEOUT_MS,
+  );
+  if (!fragment.ok || fragment.stdout.trim().length === 0) {
+    return false;
+  }
+
+  const execStart = dependencies.run(
+    'systemctl',
+    ['--user', 'show', ESPANSO_SERVICE, '--property=ExecStart', '--value'],
+    SPAWN_TIMEOUT_MS,
+  );
+  if (!execStart.ok || !SNAP_EXECUTABLE_PATTERN.test(execStart.stdout)) {
+    return false;
+  }
+
+  const dropInPath = path.join(
+    configRoot(dependencies),
+    'systemd',
+    'user',
+    `${ESPANSO_SERVICE}.d`,
+    DROP_IN_NAME,
+  );
+
+  try {
+    dependencies.writeDropIn(dropInPath, ESPANSO_SNAP_DROP_IN);
+  } catch {
+    return false;
+  }
+
+  const reload = dependencies.run(
+    'systemctl',
+    ['--user', 'daemon-reload'],
+    SPAWN_TIMEOUT_MS,
+  );
+  if (!reload.ok) {
+    return false;
+  }
+
+  const reset = dependencies.run(
+    'systemctl',
+    ['--user', 'reset-failed', ESPANSO_SERVICE],
+    SPAWN_TIMEOUT_MS,
+  );
+  if (!reset.ok) {
+    return false;
+  }
+
+  const restart = dependencies.run(
+    'systemctl',
+    ['--user', 'restart', ESPANSO_SERVICE],
+    SPAWN_TIMEOUT_MS,
+  );
+  if (!restart.ok) {
+    return false;
+  }
+
+  const before = readServiceSnapshot(dependencies);
+  if (!isHealthySnapshot(before)) {
+    return false;
+  }
+
+  dependencies.sleep(STABILITY_WAIT_MS);
+
+  const after = readServiceSnapshot(dependencies);
+  return isHealthySnapshot(after)
+    && after.mainPid === before.mainPid
+    && after.restartCount === before.restartCount;
+}
+
+export function restartEspansoWithDependencies(dependencies: RestartEspansoDependencies): boolean {
+  try {
+    const result = dependencies.run('espanso', ['restart'], SPAWN_TIMEOUT_MS);
+    if (result.ok) {
+      return true;
+    }
+    return repairSnapSystemdService(dependencies);
+  } catch {
+    return false;
+  }
+}
+
+export function restartEspanso(): boolean {
+  return restartEspansoWithDependencies(defaultRestartDependencies());
 }
 
 export function logs(opts?: LogOptions): RuntimeLogChunk[] {
