@@ -10,14 +10,25 @@ import { buildExportPlan } from './plan';
 // Generate a cryptographically secure random token on startup
 const SEC_TOKEN = crypto.randomBytes(32).toString('hex');
 
-export function startDaemon(port = 4000, options: { dir?: string, host?: string, allowLan?: boolean } = {}) {
-  let host = options.host || '127.0.0.1'; // strictly bind to loopback by default
-  const isLoopback = ['127.0.0.1', 'localhost', '::1'].includes(host);
+export interface DaemonDependencies {
+  restartEspanso: () => boolean;
+}
 
-  if (!isLoopback && !options.allowLan) {
+const defaultDaemonDependencies: DaemonDependencies = { restartEspanso };
+
+export function startDaemon(
+  port = 4000,
+  options: { dir?: string, host?: string, allowLan?: boolean } = {},
+  dependencies: DaemonDependencies = defaultDaemonDependencies,
+) {
+  let host = options.host || '127.0.0.1'; // strictly bind to loopback by default
+  const loopbackHosts = ['127.0.0.1', 'localhost', '::1'];
+
+  if (!loopbackHosts.includes(host) && !options.allowLan) {
     console.warn(`WARNING: Host ${host} is not a loopback address. Refusing to bind without --allow-lan flag for security. Falling back to 127.0.0.1.`);
     host = '127.0.0.1';
   }
+  const isLoopback = loopbackHosts.includes(host);
 
   // Centralize effective Espanso directory resolution once on startup
   let effectiveEspansoDir = options.dir;
@@ -44,14 +55,16 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     // Origin Enforcement
     const origin = req.headers.origin;
     if (origin) {
+      const address = server.address();
+      const effectivePort = typeof address === 'object' && address !== null ? address.port : port;
       const allowedOrigins = [
-        `http://127.0.0.1:${port}`,
-        `http://localhost:${port}`,
-        `http://${host}:${port}`
+        `http://127.0.0.1:${effectivePort}`,
+        `http://localhost:${effectivePort}`,
+        `http://${host}:${effectivePort}`
       ];
       // Special case for IPv6 loopback
       if (host === '::1') {
-         allowedOrigins.push(`http://[::1]:${port}`);
+         allowedOrigins.push(`http://[::1]:${effectivePort}`);
       }
       if (!allowedOrigins.includes(origin)) {
         res.writeHead(403);
@@ -61,7 +74,7 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     }
 
     if (req.url && req.url.startsWith('/api/')) {
-      handleApiRequest(req, res, { ...options, dir: effectiveEspansoDir }, workspace, workspaceService);
+      handleApiRequest(req, res, { ...options, dir: effectiveEspansoDir }, workspace, workspaceService, dependencies);
       return;
     }
 
@@ -124,8 +137,13 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     });
   });
 
+  const daemon = { server, token: SEC_TOKEN, host, port };
+
   server.listen(port, host, () => {
-    console.log(`SEC Snippet Studio UI running securely at http://${host}:${port}`);
+    const address = server.address();
+    const boundPort = typeof address === 'object' && address !== null ? address.port : port;
+    daemon.port = boundPort;
+    console.log(`SEC Snippet Studio UI running securely at http://${host}:${boundPort}`);
     if (isLoopback) {
       console.log(`Bound to loopback. Token authentication enabled.`);
     } else {
@@ -133,7 +151,7 @@ export function startDaemon(port = 4000, options: { dir?: string, host?: string,
     }
   });
 
-  return { server, token: SEC_TOKEN, host, port };
+  return daemon;
 }
 
 function findDocByLegacyId(workspace: Workspace, legacyId: string): SnippetDocument | undefined {
@@ -151,7 +169,8 @@ function handleApiRequest(
   res: http.ServerResponse,
   options: { dir?: string } = {},
   workspace: Workspace,
-  workspaceService: WorkspaceService
+  workspaceService: WorkspaceService,
+  dependencies: DaemonDependencies,
 ) {
   // Use a fixed trusted base — req.headers.host is untrusted input and not needed here.
   let url: URL;
@@ -357,7 +376,7 @@ function handleApiRequest(
           let restarted = false;
           let message = 'Plan applied successfully.';
           if (didWrite) {
-            restarted = restartEspanso();
+            restarted = dependencies.restartEspanso();
             if (!restarted) {
               message = 'Applied, but Espanso restart failed.';
             } else {

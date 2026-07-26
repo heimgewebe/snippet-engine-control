@@ -63,7 +63,7 @@ test('E2E: ST04 - CLI Apply (Actual Write)', (t) => {
 
 test('E2E: ST05 - Daemon Launch & Token Injection', async () => {
     // Start daemon
-    const daemonProcess = spawn('node', [CLI_PATH, 'ui', '--host', '127.0.0.1'], {
+    const daemonProcess = spawn('node', [CLI_PATH, 'ui', '--host', '127.0.0.1', '--port', '0'], {
         env: { ...process.env, PATH: process.env.PATH }
     });
 
@@ -107,7 +107,7 @@ test('E2E: ST05 - Daemon Launch & Token Injection', async () => {
         assert.ok(daemonUrl, `Daemon should output listening address, got: ${stdoutData}`);
 
         // Fetch HTML
-        const response = await fetch(daemonUrl);
+        const response = await fetch(daemonUrl, { headers: { Origin: daemonUrl } });
         assert.equal(response.status, 200);
 
         const html = await response.text();
