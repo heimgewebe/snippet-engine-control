@@ -8,9 +8,11 @@ import { runCommand, SPAWN_TIMEOUT_MS } from '../utils/exec';
 const ESPANSO_SERVICE = 'espanso.service';
 const SNAP_CURRENT_BINARY = '/snap/espanso/current/espanso';
 const SNAP_EXECUTABLE_PATTERN = /\/snap\/(?:bin\/espanso|espanso\/(?:current|\d+)\/espanso)\b/;
+const SNAP_LAUNCHER_COMMAND_PATTERN = /\/snap\/(?:bin\/espanso|espanso\/(?:current|\d+)\/espanso)\s+launcher\b/;
+const SNAP_DAEMON_COMMAND_PATTERN = /\/snap\/(?:bin\/espanso|espanso\/(?:current|\d+)\/espanso)\s+daemon\b/;
 const DROP_IN_NAME = '10-sec-snap-wrapper.conf';
 const STABILITY_WAIT_MS = 10_000;
-export const ESPANSO_SNAP_DROP_IN = '[Service]\nExecStart=\nExecStart=/snap/espanso/current/espanso launcher\n';
+export const ESPANSO_SNAP_DROP_IN = '[Service]\nExecStart=\nExecStart=/snap/espanso/current/espanso daemon\n';
 
 type CommandRunner = typeof runCommand;
 
@@ -119,9 +121,9 @@ function isHealthySnapshot(snapshot: ServiceSnapshot | null): snapshot is Servic
     && /^\d+$/.test(snapshot.restartCount);
 }
 
-function repairSnapSystemdService(dependencies: RestartEspansoDependencies): boolean {
+function readSnapSystemdExecStart(dependencies: RestartEspansoDependencies): string | null {
   if (dependencies.platform !== 'linux' || !dependencies.fileExists(SNAP_CURRENT_BINARY)) {
-    return false;
+    return null;
   }
 
   const fragment = dependencies.run(
@@ -130,7 +132,7 @@ function repairSnapSystemdService(dependencies: RestartEspansoDependencies): boo
     SPAWN_TIMEOUT_MS,
   );
   if (!fragment.ok || fragment.stdout.trim().length === 0) {
-    return false;
+    return null;
   }
 
   const execStart = dependencies.run(
@@ -139,30 +141,58 @@ function repairSnapSystemdService(dependencies: RestartEspansoDependencies): boo
     SPAWN_TIMEOUT_MS,
   );
   if (!execStart.ok || !SNAP_EXECUTABLE_PATTERN.test(execStart.stdout)) {
+    return null;
+  }
+
+  return execStart.stdout;
+}
+
+function isSnapLauncherCommand(execStart: string): boolean {
+  return SNAP_LAUNCHER_COMMAND_PATTERN.test(execStart);
+}
+
+function isSnapDaemonCommand(execStart: string): boolean {
+  return SNAP_DAEMON_COMMAND_PATTERN.test(execStart);
+}
+
+function repairSnapSystemdService(
+  dependencies: RestartEspansoDependencies,
+  observedExecStart?: string | null,
+): boolean {
+  const execStart = observedExecStart ?? readSnapSystemdExecStart(dependencies);
+  if (!execStart) {
     return false;
   }
 
-  const dropInPath = path.join(
-    configRoot(dependencies),
-    'systemd',
-    'user',
-    `${ESPANSO_SERVICE}.d`,
-    DROP_IN_NAME,
-  );
-
-  try {
-    dependencies.writeDropIn(dropInPath, ESPANSO_SNAP_DROP_IN);
-  } catch {
+  const usesLauncher = isSnapLauncherCommand(execStart);
+  const usesDirectDaemon = isSnapDaemonCommand(execStart);
+  if (!usesLauncher && !usesDirectDaemon) {
     return false;
   }
 
-  const reload = dependencies.run(
-    'systemctl',
-    ['--user', 'daemon-reload'],
-    SPAWN_TIMEOUT_MS,
-  );
-  if (!reload.ok) {
-    return false;
+  if (usesLauncher) {
+    const dropInPath = path.join(
+      configRoot(dependencies),
+      'systemd',
+      'user',
+      `${ESPANSO_SERVICE}.d`,
+      DROP_IN_NAME,
+    );
+
+    try {
+      dependencies.writeDropIn(dropInPath, ESPANSO_SNAP_DROP_IN);
+    } catch {
+      return false;
+    }
+
+    const reload = dependencies.run(
+      'systemctl',
+      ['--user', 'daemon-reload'],
+      SPAWN_TIMEOUT_MS,
+    );
+    if (!reload.ok) {
+      return false;
+    }
   }
 
   const reset = dependencies.run(
@@ -200,7 +230,11 @@ export function restartEspansoWithDependencies(dependencies: RestartEspansoDepen
   try {
     const result = dependencies.run('espanso', ['restart'], SPAWN_TIMEOUT_MS);
     if (result.ok) {
-      return true;
+      const execStart = readSnapSystemdExecStart(dependencies);
+      if (!execStart || !isSnapLauncherCommand(execStart)) {
+        return true;
+      }
+      return repairSnapSystemdService(dependencies, execStart);
     }
     return repairSnapSystemdService(dependencies);
   } catch {

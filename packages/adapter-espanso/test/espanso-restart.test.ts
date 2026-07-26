@@ -37,11 +37,12 @@ function dependencies(overrides: Partial<RestartEspansoDependencies> = {}): Rest
   };
 }
 
-test('restartEspansoWithDependencies returns after a successful native restart', () => {
+test('restartEspansoWithDependencies returns after a successful native restart when Snap repair does not apply', () => {
   const calls: string[] = [];
   let wroteDropIn = false;
   let slept = false;
   const restarted = restartEspansoWithDependencies(dependencies({
+    platform: 'darwin',
     run: (command, args) => {
       calls.push([command, ...args].join(' '));
       return result(true);
@@ -58,6 +59,126 @@ test('restartEspansoWithDependencies returns after a successful native restart',
   assert.deepEqual(calls, ['espanso restart']);
   assert.equal(wroteDropIn, false);
   assert.equal(slept, false);
+});
+
+test('repairs a Snap launcher even when the native restart reports success', () => {
+  const calls: string[] = [];
+  const writes: Array<{ filePath: string; content: string }> = [];
+  const waits: number[] = [];
+  const restarted = restartEspansoWithDependencies(dependencies({
+    run: (command, args) => {
+      const call = [command, ...args].join(' ');
+      calls.push(call);
+      if (call === 'espanso restart') return result(true);
+      if (call.includes('--property=FragmentPath')) {
+        return result(true, '/home/tester/.config/systemd/user/espanso.service\n');
+      }
+      if (call.includes('--property=ExecStart')) {
+        return result(true, '{ path=/snap/espanso/current/espanso ; argv[]=/snap/espanso/current/espanso launcher ; }\n');
+      }
+      if (call === 'systemctl --user daemon-reload') return result(true);
+      if (call === 'systemctl --user reset-failed espanso.service') return result(true);
+      if (call === 'systemctl --user restart espanso.service') return result(true);
+      if (call === SERVICE_SNAPSHOT_COMMAND) return snapshot('1234', '0');
+      return result(false, '', `unexpected command: ${call}`);
+    },
+    writeDropIn: (filePath, content) => writes.push({ filePath, content }),
+    sleep: milliseconds => waits.push(milliseconds),
+  }));
+
+  assert.equal(restarted, true);
+  assert.deepEqual(writes, [{
+    filePath: path.join('/tmp/sec-config', 'systemd/user/espanso.service.d/10-sec-snap-wrapper.conf'),
+    content: ESPANSO_SNAP_DROP_IN,
+  }]);
+  assert.deepEqual(waits, [10_000]);
+  assert.deepEqual(calls, [
+    'espanso restart',
+    'systemctl --user show espanso.service --property=FragmentPath --value',
+    'systemctl --user show espanso.service --property=ExecStart --value',
+    'systemctl --user daemon-reload',
+    'systemctl --user reset-failed espanso.service',
+    'systemctl --user restart espanso.service',
+    SERVICE_SNAPSHOT_COMMAND,
+    SERVICE_SNAPSHOT_COMMAND,
+  ]);
+});
+
+test('keeps an already direct-daemon Snap service on the fast native restart path', () => {
+  const calls: string[] = [];
+  let wroteDropIn = false;
+  let slept = false;
+  const restarted = restartEspansoWithDependencies(dependencies({
+    run: (command, args) => {
+      const call = [command, ...args].join(' ');
+      calls.push(call);
+      if (call === 'espanso restart') return result(true);
+      if (call.includes('--property=FragmentPath')) {
+        return result(true, '/home/tester/.config/systemd/user/espanso.service\n');
+      }
+      if (call.includes('--property=ExecStart')) {
+        return result(true, '{ path=/snap/espanso/current/espanso ; argv[]=/snap/espanso/current/espanso daemon ; }\n');
+      }
+      return result(false, '', `unexpected command: ${call}`);
+    },
+    writeDropIn: () => {
+      wroteDropIn = true;
+    },
+    sleep: () => {
+      slept = true;
+    },
+  }));
+
+  assert.equal(restarted, true);
+  assert.deepEqual(calls, [
+    'espanso restart',
+    'systemctl --user show espanso.service --property=FragmentPath --value',
+    'systemctl --user show espanso.service --property=ExecStart --value',
+  ]);
+  assert.equal(wroteDropIn, false);
+  assert.equal(slept, false);
+});
+
+test('restarts an already direct Snap daemon through systemd when the native restart fails', () => {
+  const calls: string[] = [];
+  const waits: number[] = [];
+  let wroteDropIn = false;
+  const restarted = restartEspansoWithDependencies(dependencies({
+    run: (command, args) => {
+      const call = [command, ...args].join(' ');
+      calls.push(call);
+      if (call === 'espanso restart') {
+        return result(false, '', 'snap-confine capability failure');
+      }
+      if (call.includes('--property=FragmentPath')) {
+        return result(true, '/home/tester/.config/systemd/user/espanso.service\n');
+      }
+      if (call.includes('--property=ExecStart')) {
+        return result(true, '{ path=/snap/espanso/current/espanso ; argv[]=/snap/espanso/current/espanso daemon ; }\n');
+      }
+      if (call === 'systemctl --user reset-failed espanso.service') return result(true);
+      if (call === 'systemctl --user restart espanso.service') return result(true);
+      if (call === SERVICE_SNAPSHOT_COMMAND) return snapshot('1234', '0');
+      return result(false, '', `unexpected command: ${call}`);
+    },
+    writeDropIn: () => {
+      wroteDropIn = true;
+    },
+    sleep: milliseconds => waits.push(milliseconds),
+  }));
+
+  assert.equal(restarted, true);
+  assert.equal(wroteDropIn, false);
+  assert.deepEqual(waits, [10_000]);
+  assert.deepEqual(calls, [
+    'espanso restart',
+    'systemctl --user show espanso.service --property=FragmentPath --value',
+    'systemctl --user show espanso.service --property=ExecStart --value',
+    'systemctl --user reset-failed espanso.service',
+    'systemctl --user restart espanso.service',
+    SERVICE_SNAPSHOT_COMMAND,
+    SERVICE_SNAPSHOT_COMMAND,
+  ]);
 });
 
 test('repairs a revision-bound Snap user service and verifies delayed stability', () => {
@@ -130,10 +251,10 @@ test('rewrites the unstable Snap wrapper override to the current binary', () => 
   assert.equal(restarted, true);
   assert.equal(writes.length, 1);
   assert.equal(writes[0].content, ESPANSO_SNAP_DROP_IN);
-  assert.match(writes[0].content, /\/snap\/espanso\/current\/espanso launcher/);
+  assert.match(writes[0].content, /\/snap\/espanso\/current\/espanso daemon/);
 });
 
-test('keeps the current Snap binary override idempotent', () => {
+test('rewrites a current Snap launcher override to the direct daemon', () => {
   let writes = 0;
   const restarted = restartEspansoWithDependencies(dependencies({
     run: (command, args) => {
